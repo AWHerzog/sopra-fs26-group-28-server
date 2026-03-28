@@ -64,6 +64,11 @@ public class UserService {
 		return newUser;
 	}
 
+	public User loginUser(User loginUser){
+		validateLoginCredentials(loginUser); //check if credentials are valid
+		return userRepository.findByUsername(loginUser.getUsername()); //return User
+	}
+
 	/**
 	 * This is a helper method that will check the uniqueness criteria of the
 	 * username and the name
@@ -86,7 +91,7 @@ public class UserService {
 
 	/**
 	 * This helper method checks if the password and the db hash match
-	 *
+	 * Method will do nothing if they match and will throw an error otherwise.
 	 * @param userToBeLoggedIn
 	 * @throws org.springframework.web.server.ResponseStatusException
 	 * @see User
