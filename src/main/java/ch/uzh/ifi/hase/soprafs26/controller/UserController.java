@@ -11,6 +11,7 @@ import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * User Controller
@@ -67,6 +68,20 @@ public class UserController {
 		User loggedInUser = userService.loginUser(userInput);
 		// convert internal representation of user back to API
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedInUser);
+	}
+
+	
+
+	@PostMapping("/users/logout")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public void logout(@RequestBody Map<String, String> responseBody) {
+		//get token from frontend
+		String token = responseBody.get("token").trim();
+
+		//logout
+		userService.logoutUser(token);
+
 	}
 
 }

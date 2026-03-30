@@ -10,6 +10,7 @@ public class UserGetDTO {
 	private UserStatus status;
 	private LocalDateTime creationDate;
 	private int points;
+	private String token;
 
 	
 	public Long getId() {
@@ -51,5 +52,13 @@ public class UserGetDTO {
 
 	public void setPoints(int points){
 		this.points = points;
+	}
+
+	public String getToken(){
+		return token;
+	}
+
+	public void setToken(String token){
+		this.token = token;
 	}
 }

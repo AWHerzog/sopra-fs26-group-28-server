@@ -46,7 +46,7 @@ public class UserService {
 
 	public User createUser(User newUser) {
 		newUser.setToken(UUID.randomUUID().toString());
-		newUser.setStatus(UserStatus.OFFLINE);
+		newUser.setStatus(UserStatus.ONLINE);
 		newUser.setCreationDate(LocalDateTime.now());
 		newUser.setPoints(0);
 
@@ -66,7 +66,16 @@ public class UserService {
 
 	public User loginUser(User loginUser){
 		validateLoginCredentials(loginUser); //check if credentials are valid
-		return userRepository.findByUsername(loginUser.getUsername()); //return User
+		User user = userRepository.findByUsername(loginUser.getUsername()); //get User
+		user.setToken(UUID.randomUUID().toString());
+		user.setStatus(UserStatus.ONLINE);
+		return user;
+	}
+
+	public void logoutUser(String token){
+		User user = userRepository.findByToken(token);
+		user.setToken(null);
+		user.setStatus(UserStatus.OFFLINE);
 	}
 
 	/**
