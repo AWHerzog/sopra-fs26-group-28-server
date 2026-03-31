@@ -78,6 +78,11 @@ public class UserService {
 		user.setStatus(UserStatus.OFFLINE);
 	}
 
+	public User getUserById(Long id) {
+    return userRepository.findById(id)
+        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+	}
+
 	/**
 	 * This is a helper method that will check the uniqueness criteria of the
 	 * username and the name
