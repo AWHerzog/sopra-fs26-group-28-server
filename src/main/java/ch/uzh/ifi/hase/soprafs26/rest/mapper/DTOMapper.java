@@ -7,6 +7,10 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Game;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GamePostDTO;
+
 /**
  * DTOMapper
  * This class is responsible for generating classes that will automatically
@@ -34,4 +38,11 @@ public interface DTOMapper {
 	@Mapping(source = "points", target = "points")
 	@Mapping(source = "token", target = "token")
 	UserGetDTO convertEntityToUserGetDTO(User user);
+
+	@Mapping(source = "id", target = "id")
+	@Mapping(source = "hostname", target = "hostname")
+	@Mapping(source = "code", target = "code")
+	@Mapping(source = "status", target = "status")
+	@Mapping(source = "players", target = "players")
+	GameGetDTO convertEntityToGameGetDTO(Game game);
 }
