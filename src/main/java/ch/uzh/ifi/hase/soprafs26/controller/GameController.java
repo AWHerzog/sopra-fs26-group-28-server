@@ -29,7 +29,8 @@ public class GameController {
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(gameService.createGame(username));
     }
 
-    @PostMapping("/join")
+    @PostMapping("/games/join")
+	@ResponseStatus(HttpStatus.OK)
     public GameGetDTO join(@RequestBody Map<String, String> responseBody) {
 		String code = responseBody.get("code").trim();
 		String username = responseBody.get("token").trim();
