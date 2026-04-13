@@ -32,6 +32,12 @@ public class Game implements Serializable {
 	private GameStatus status;
 
 	@ElementCollection
+	@CollectionTable(
+    	name = "game_players",
+    	joinColumns = @JoinColumn(name = "game_id")
+	)
+	@MapKeyColumn(name = "username")
+	@Column(name = "points")
 	private Map<String, Integer> players = new HashMap<>();
 	
 	public Long getId() {

@@ -83,13 +83,9 @@ public class UserController {
 	@PostMapping("/users/logout")
 	@ResponseStatus(HttpStatus.OK)
 	@ResponseBody
-	public void logout(@RequestBody Map<String, String> responseBody) {
-		//get token from frontend
-		String token = responseBody.get("token").trim();
-
-		//logout
+	public void logout(@RequestHeader("Authorization") String token) {
+		userService.checkTokenAuthenticity(token);
 		userService.logoutUser(token);
-
 	}
 
 }
