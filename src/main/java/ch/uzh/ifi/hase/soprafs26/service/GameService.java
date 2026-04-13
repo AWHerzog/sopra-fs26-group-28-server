@@ -55,13 +55,15 @@ public class GameService {
 
 	public Game joinGame(String code, String username) {
         Game game = gameRepository.findByCode(code);
-
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
 
-        game.addPlayer(username, 0);
+        if (game.getStatus() != GameStatus.WAITING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not in waiting state");
+        }
 
+        game.addPlayer(username, 0);
         game = gameRepository.save(game);
 		gameRepository.flush();
 
