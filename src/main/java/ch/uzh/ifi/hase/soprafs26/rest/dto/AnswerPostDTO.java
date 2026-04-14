@@ -5,5 +5,22 @@ package ch.uzh.ifi.hase.soprafs26.rest.dto;
  * Contains the user's answer payload for a specific round question.
  */
 public class AnswerPostDTO {
-    // TODO: Add fields for answer content (e.g., answerText, questionId)
+    private Long questionId;
+    private String answerText;
+
+    public Long getQuestionId() {
+        return questionId;
+    }
+
+    public void setQuestionId(Long questionId) {
+        this.questionId = questionId;
+    }
+
+    public String getAnswerText() {
+        return answerText;
+    }
+
+    public void setAnswerText(String answerText) {
+        this.answerText = answerText;
+    }
 }

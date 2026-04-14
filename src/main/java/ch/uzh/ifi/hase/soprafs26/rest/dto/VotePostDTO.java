@@ -5,5 +5,22 @@ package ch.uzh.ifi.hase.soprafs26.rest.dto;
  * Contains the user's vote on a specific answer/user combination.
  */
 public class VotePostDTO {
-    // TODO: Add fields for vote content (e.g., votedAnswerId, votedUserId)
+    private Long answerId;
+    private Long votedUserId;
+
+    public Long getAnswerId() {
+        return answerId;
+    }
+
+    public void setAnswerId(Long answerId) {
+        this.answerId = answerId;
+    }
+
+    public Long getVotedUserId() {
+        return votedUserId;
+    }
+
+    public void setVotedUserId(Long votedUserId) {
+        this.votedUserId = votedUserId;
+    }
 }
