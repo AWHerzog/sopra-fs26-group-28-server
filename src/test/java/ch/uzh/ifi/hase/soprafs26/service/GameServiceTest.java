@@ -65,7 +65,7 @@ public class GameServiceTest {
     @Test
     public void joinGame_gameAlreadyStarted_throwsException() {
         // given
-        testGame.setStatus(GameStatus.PLAYING);
+        testGame.setStatus(GameStatus.ANSWERING);
         Mockito.when(gameRepository.findByCode("abc123")).thenReturn(testGame);
 
         // then

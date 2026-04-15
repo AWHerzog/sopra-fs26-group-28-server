@@ -38,6 +38,9 @@ public class Round implements Serializable {
     @Column(nullable = true)
     private LocalDateTime completedAt;
 
+    @Column(nullable = true)
+    private String correctAnswer;
+
     public Long getId() {
         return id;
     }
@@ -84,5 +87,13 @@ public class Round implements Serializable {
 
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public String getCorrectAnswer() {
+        return correctAnswer;
+    }
+
+    public void setCorrectAnswer(String correctAnswer) {
+        this.correctAnswer = correctAnswer;
     }
 }

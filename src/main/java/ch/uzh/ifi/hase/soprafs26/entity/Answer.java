@@ -41,6 +41,9 @@ public class Answer implements Serializable {
     @Column(nullable = false)
     private LocalDateTime submittedAt = LocalDateTime.now();
 
+    @Column(nullable = false)
+    private Boolean isCorrect = false;
+
     public Long getId() {
         return id;
     }
@@ -80,4 +83,13 @@ public class Answer implements Serializable {
     public void setSubmittedAt(LocalDateTime submittedAt) {
         this.submittedAt = submittedAt;
     }
+
+    public Boolean getIsCorrect() {
+    return isCorrect;
+    }
+
+    public void setIsCorrect(Boolean isCorrect) {
+        this.isCorrect = isCorrect;
+    }
+
 }
