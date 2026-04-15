@@ -1,5 +1,11 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Round;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.AnswerPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameStartPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameStateGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.VotePostDTO;
 import org.springframework.stereotype.Service;
 
 /**
@@ -9,12 +15,31 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class GameFlowService {
-    // TODO: Add core game flow methods:
-    // - startGame(gameCode, hostUser)
-    // - submitAnswer(gameCode, user, payload)
-    // - submitVote(gameCode, user, payload)
-    // - advanceStage(gameCode)
-    // - computeRoundScores(gameCode, round)
-    // - finishGame(gameCode)
-    // - getCurrentGameState(gameCode, user)
+    public GameStateGetDTO startGame(String gameCode, User hostUser, GameStartPostDTO payload) {
+        throw new UnsupportedOperationException("TODO: implement startGame");
+    }
+
+    public GameStateGetDTO submitAnswer(String gameCode, User user, AnswerPostDTO payload) {
+        throw new UnsupportedOperationException("TODO: implement submitAnswer");
+    }
+
+    public GameStateGetDTO submitVote(String gameCode, User user, VotePostDTO payload) {
+        throw new UnsupportedOperationException("TODO: implement submitVote");
+    }
+
+    public GameStateGetDTO advanceStage(String gameCode) {
+        throw new UnsupportedOperationException("TODO: implement advanceStage");
+    }
+
+    public void computeRoundScores(String gameCode, Round round) {
+        throw new UnsupportedOperationException("TODO: implement computeRoundScores");
+    }
+
+    public GameStateGetDTO finishGame(String gameCode) {
+        throw new UnsupportedOperationException("TODO: implement finishGame");
+    }
+
+    public GameStateGetDTO getCurrentGameState(String gameCode, User user) {
+        throw new UnsupportedOperationException("TODO: implement getCurrentGameState");
+    }
 }
