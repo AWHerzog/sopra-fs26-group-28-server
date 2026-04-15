@@ -18,37 +18,34 @@ Target files:
 - Existing: `src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Game.java`
 
 Tasks:
-- [ ] Extend `GameStatus` beyond WAITING if needed:
+- [x] Extend `GameStatus` beyond WAITING if needed:
   - Suggested: `WAITING`, `ANSWERING`, `VOTING`, `ROUND_RESULT`, `FINISHED`
-- [ ] Add round metadata to `Game`:
-  - [ ] `currentRound`
-  - [ ] `maxRounds`
-  - [ ] `currentQuestionId` (or question text/key)
-  - [ ] `stageDeadline` (server-authoritative timeout)
-- [ ] Keep existing `players` map as total scoreboard (username -> points)
-- [ ] Add host/game constraints validation in service layer (do not trust DTO only)
+- [x] Add round metadata to `Game`:
+  - [x] `currentRound`
+  - [x] `maxRounds`
+  - [x] `currentQuestionId` (or question text/key)
+  - [x] `stageDeadline` (server-authoritative timeout)
+- [x] Keep existing `players` map as total scoreboard (username -> points)
+- [x] Add host/game constraints validation in service layer (do not trust DTO only)
 
 ## 2) Add Round-Level Persistence
 
 Create new files:
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Round.java`
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Answer.java`
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Vote.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Round.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Answer.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Vote.java`
 
 Create new repositories:
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/repository/RoundRepository.java`
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/repository/AnswerRepository.java`
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/repository/VoteRepository.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/repository/RoundRepository.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/repository/AnswerRepository.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/repository/VoteRepository.java`
 
 Model constraints to enforce:
-- [ ] Exactly one answer per user per round
-- [ ] Exactly one vote per user per round
-- [ ] No vote before all required answers (or timeout)
-- [ ] Optional: no self-vote rule
+- [x] Exactly one answer per user per round
+- [x] Exactly one vote per user per round
+- [x] No vote before all required answers (or timeout)
+- [x] Optional: no self-vote rule
 
-Implementation notes:
-- [ ] Add DB-level uniqueness constraints where possible
-- [ ] Keep foreign keys to game/round/user identifiers explicit
 
 ## 3) Define DTOs and Mapper Updates
 
@@ -58,15 +55,15 @@ Target files:
 - Existing: `src/main/java/ch/uzh/ifi/hase/soprafs26/rest/mapper/DTOMapper.java`
 
 Create new DTOs (suggested):
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/rest/dto/GameStartPostDTO.java`
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/rest/dto/AnswerPostDTO.java`
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/rest/dto/VotePostDTO.java`
-- [ ] `src/main/java/ch/uzh/ifi/hase/soprafs26/rest/dto/GameStateGetDTO.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/rest/dto/GameStartPostDTO.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/rest/dto/AnswerPostDTO.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/rest/dto/VotePostDTO.java`
+- [x] `src/main/java/ch/uzh/ifi/hase/soprafs26/rest/dto/GameStateGetDTO.java`
 
 Tasks:
-- [ ] Expose enough state in `GameGetDTO`/`GameStateGetDTO` for frontend stage rendering
-- [ ] Map entities -> DTO in `DTOMapper` without leaking internal persistence details
-- [ ] Add fields for round, stage, timer/deadline, submitted flags, and scores
+- [x] Expose enough state in `GameGetDTO`/`GameStateGetDTO` for frontend stage rendering
+- [x] Map entities -> DTO in `DTOMapper` without leaking internal persistence details
+- [x] Add fields for round, stage, timer/deadline, submitted flags, and scores
 
 ## 4) Implement Core Game Logic in Service Layer
 
