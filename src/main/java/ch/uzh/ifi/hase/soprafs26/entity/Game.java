@@ -31,6 +31,18 @@ public class Game implements Serializable {
 	@Column(nullable = false)
 	private GameStatus status;
 
+	@Column(nullable = false)
+	private Integer currentRound = 0;
+
+	@Column(nullable = false)
+	private Integer maxRounds = 5;
+
+	@Column(nullable = true)
+	private Long currentQuestionId;
+
+	@Column(nullable = true)
+	private LocalDateTime stageDeadline;
+
 	@ElementCollection
 	@CollectionTable(
     	name = "game_players",
@@ -87,5 +99,37 @@ public class Game implements Serializable {
 
 	public void removePlayer(String username){
 		players.remove(username);
+	}
+
+	public Integer getCurrentRound() {
+		return currentRound;
+	}
+
+	public void setCurrentRound(Integer currentRound) {
+		this.currentRound = currentRound;
+	}
+
+	public Integer getMaxRounds() {
+		return maxRounds;
+	}
+
+	public void setMaxRounds(Integer maxRounds) {
+		this.maxRounds = maxRounds;
+	}
+
+	public Long getCurrentQuestionId() {
+		return currentQuestionId;
+	}
+
+	public void setCurrentQuestionId(Long currentQuestionId) {
+		this.currentQuestionId = currentQuestionId;
+	}
+
+	public LocalDateTime getStageDeadline() {
+		return stageDeadline;
+	}
+
+	public void setStageDeadline(LocalDateTime stageDeadline) {
+		this.stageDeadline = stageDeadline;
 	}
 }

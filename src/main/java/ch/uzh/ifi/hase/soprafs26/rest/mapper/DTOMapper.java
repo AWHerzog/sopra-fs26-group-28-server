@@ -9,6 +9,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Game;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameStateGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GamePostDTO;
 
 /**
@@ -43,6 +44,28 @@ public interface DTOMapper {
 	@Mapping(source = "hostname", target = "hostname")
 	@Mapping(source = "code", target = "code")
 	@Mapping(source = "status", target = "status")
+	@Mapping(source = "currentRound", target = "currentRound")
+	@Mapping(source = "maxRounds", target = "maxRounds")
+	@Mapping(source = "currentQuestionId", target = "currentQuestionId")
+	@Mapping(source = "stageDeadline", target = "stageDeadline")
+	@Mapping(target = "answerSubmitted", ignore = true)
+	@Mapping(target = "voteSubmitted", ignore = true)
 	@Mapping(source = "players", target = "players")
+	@Mapping(source = "players", target = "scores")
 	GameGetDTO convertEntityToGameGetDTO(Game game);
+
+	@Mapping(source = "id", target = "id")
+	@Mapping(source = "hostname", target = "hostname")
+	@Mapping(source = "code", target = "code")
+	@Mapping(source = "status", target = "status")
+	@Mapping(source = "status", target = "stage")
+	@Mapping(source = "currentRound", target = "currentRound")
+	@Mapping(source = "maxRounds", target = "maxRounds")
+	@Mapping(source = "currentQuestionId", target = "currentQuestionId")
+	@Mapping(source = "stageDeadline", target = "stageDeadline")
+	@Mapping(target = "answerSubmitted", ignore = true)
+	@Mapping(target = "voteSubmitted", ignore = true)
+	@Mapping(source = "players", target = "players")
+	@Mapping(source = "players", target = "scores")
+	GameStateGetDTO convertEntityToGameStateGetDTO(Game game);
 }
