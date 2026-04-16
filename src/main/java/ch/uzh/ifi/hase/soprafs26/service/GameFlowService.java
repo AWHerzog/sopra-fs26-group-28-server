@@ -1,6 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-
+import java.util.Map;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Answer;
 import ch.uzh.ifi.hase.soprafs26.entity.Game;
@@ -44,15 +44,19 @@ public class GameFlowService {
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
+    private final QuestionService questionService;
+
     public GameFlowService(GameRepository gameRepository, RoundRepository roundRepository,
-                           AnswerRepository answerRepository, VoteRepository voteRepository,
-                           UserRepository userRepository, SimpMessagingTemplate messagingTemplate) {
+                        AnswerRepository answerRepository, VoteRepository voteRepository,
+                        UserRepository userRepository, SimpMessagingTemplate messagingTemplate,
+                        QuestionService questionService) {
         this.gameRepository = gameRepository;
         this.roundRepository = roundRepository;
         this.answerRepository = answerRepository;
         this.voteRepository = voteRepository;
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
+        this.questionService = questionService;
     }
 
     // Host starts the game, setting state and deadline
@@ -86,6 +90,7 @@ public class GameFlowService {
         Round round = new Round();
         round.setGameId(game.getId());
         round.setRoundNumber(1);
+        assignQuestionToRound(game, round);
         roundRepository.save(round);
         roundRepository.flush();
 
@@ -248,6 +253,7 @@ public class GameFlowService {
                 Round newRound = new Round();
                 newRound.setGameId(game.getId());
                 newRound.setRoundNumber(nextRound);
+                assignQuestionToRound(game, newRound);
                 roundRepository.save(newRound);
                 roundRepository.flush();
                 break;
@@ -319,12 +325,6 @@ public class GameFlowService {
         return buildGameState(game, user);
     }
 
-
-
-
-
-
-
     // Helper methods
 
 
@@ -363,6 +363,13 @@ public class GameFlowService {
     // Sends Current Game State to all players. -> /topic/game/{gameCode} websocket makes sure update is instantly.
     private void sendGameUpdate(Game game) {
         messagingTemplate.convertAndSend("/topic/game/" + game.getCode(), DTOMapper.INSTANCE.convertEntityToGameStateGetDTO(game));
+    }
+
+    private void assignQuestionToRound(Game game, Round round) {
+        Map<String, Object> question = questionService.getRandomQuestion(game);
+        round.setQuestionId(Long.valueOf(question.get("id").toString()));
+        round.setCorrectAnswer(question.get("answer").toString());
+        game.setCurrentQuestionId(Long.valueOf(question.get("id").toString()));
     }
 
 }
