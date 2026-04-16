@@ -16,6 +16,8 @@ import ch.uzh.ifi.hase.soprafs26.entity.Game;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.service.GameService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
+import ch.uzh.ifi.hase.soprafs26.service.GameFlowService;
+
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,6 +36,10 @@ public class GameControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private GameFlowService gameFlowService;
+
 
     @Test
     public void createGame_validInput_returnsGame() throws Exception {
