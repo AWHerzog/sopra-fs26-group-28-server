@@ -60,6 +60,7 @@ public class GameStateGetDTO {
     private Map<String, Integer> scores = new HashMap<>();
     private QuestionDTO question;
     private List<AnswerDTO> answers = new ArrayList<>();
+    private List<String> submittedUsernames = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -170,4 +171,7 @@ public class GameStateGetDTO {
 
     public List<AnswerDTO> getAnswers() { return answers; }
     public void setAnswers(List<AnswerDTO> answers) { this.answers = answers; }
+
+    public List<String> getSubmittedUsernames() { return submittedUsernames; }
+    public void setSubmittedUsernames(List<String> submittedUsernames) { this.submittedUsernames = submittedUsernames; }
 }

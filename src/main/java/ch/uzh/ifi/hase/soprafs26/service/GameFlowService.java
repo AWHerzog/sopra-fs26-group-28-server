@@ -379,8 +379,18 @@ public class GameFlowService {
                     } catch (Exception ignored) {}
                 }
 
+                // Populate submittedUsernames (only real players, not correct answer entry)
+                List<Answer> allAnswers = answerRepository.findByRoundId(round.getId());
+                List<String> submittedUsernames = new ArrayList<>();
+                for (Answer a : allAnswers) {
+                    if (a.getUserId() != null) {
+                        userRepository.findById(a.getUserId()).ifPresent(u -> submittedUsernames.add(u.getUsername()));
+                    }
+                }
+                state.setSubmittedUsernames(submittedUsernames);
+
                 // Populate answers
-                List<Answer> answers = answerRepository.findByRoundId(round.getId());
+                List<Answer> answers = allAnswers;
                 String correctAnswer = round.getCorrectAnswer();
                 List<GameStateGetDTO.AnswerDTO> answerDTOs = new ArrayList<>();
                 for (Answer answer : answers) {
