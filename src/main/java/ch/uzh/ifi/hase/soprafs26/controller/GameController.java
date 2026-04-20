@@ -41,8 +41,18 @@ public class GameController {
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(gameService.joinGame(code, username));
     }
 
-	/* 
-	@PostMapping("/delete")
-	public void delete()
-	*/
+	@GetMapping("/games/{code}/state")
+	@ResponseStatus(HttpStatus.OK)
+	public GameGetDTO getState(@PathVariable String code, @RequestHeader("Authorization") String token) {
+		userService.checkTokenAuthenticity(token);
+		return DTOMapper.INSTANCE.convertEntityToGameGetDTO(gameService.getGameState(code));
+	}
+
+	@PostMapping("/games/{code}/start")
+	@ResponseStatus(HttpStatus.OK)
+	public GameGetDTO start(@PathVariable String code, @RequestBody Map<String, Object> body, @RequestHeader("Authorization") String token) {
+		userService.checkTokenAuthenticity(token);
+		int maxRounds = body.containsKey("maxRounds") ? (int) body.get("maxRounds") : 5;
+		return DTOMapper.INSTANCE.convertEntityToGameGetDTO(gameService.startGame(code, maxRounds));
+	}
 }

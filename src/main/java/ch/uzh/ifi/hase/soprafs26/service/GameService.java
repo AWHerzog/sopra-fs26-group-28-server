@@ -79,6 +79,24 @@ public class GameService {
 	 * @see Game
 	 */
 
+	public Game getGameState(String code) {
+		Game game = gameRepository.findByCode(code);
+		if (game == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+		return game;
+	}
+
+	public Game startGame(String code, int maxRounds) {
+		Game game = gameRepository.findByCode(code);
+		if (game == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+		game.setStatus(GameStatus.ANSWERING);
+		game.setMaxRounds(maxRounds);
+		game.setCurrentRound(1);
+		game = gameRepository.save(game);
+		gameRepository.flush();
+		sendGameUpdate(game);
+		return game;
+	}
+
 	private void sendGameUpdate(Game game) {
         messagingTemplate.convertAndSend("/topic/game/" + game.getCode(), DTOMapper.INSTANCE.convertEntityToGameGetDTO(game));
     }
