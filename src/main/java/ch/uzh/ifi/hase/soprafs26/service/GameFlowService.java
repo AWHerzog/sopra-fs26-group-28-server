@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -344,25 +345,60 @@ public class GameFlowService {
         
     }
 
-    // Converts Game to GameStateGetDTO and adds info about whether a user has submitted answer/vote for current round. 
+    // Converts Game to GameStateGetDTO and populates question, answers, and user-specific flags.
     private GameStateGetDTO buildGameState(Game game, User user) {
-       GameStateGetDTO state = DTOMapper.INSTANCE.convertEntityToGameStateGetDTO(game);
+        GameStateGetDTO state = DTOMapper.INSTANCE.convertEntityToGameStateGetDTO(game);
 
-       if (user != null && game.getCurrentRound() != null && game.getCurrentRound() > 0) {
+        if (game.getCurrentRound() != null && game.getCurrentRound() > 0) {
             Optional<Round> roundOpt = roundRepository.findByGameIdAndRoundNumber(game.getId(), game.getCurrentRound());
-        
-        if (roundOpt.isPresent()) {
-            Round round = roundOpt.get();
-            state.setAnswerSubmitted(answerRepository.existsByRoundIdAndUserId(round.getId(), user.getId()));
-            state.setVoteSubmitted(voteRepository.existsByRoundIdAndVoterId(round.getId(), user.getId()));
+
+            if (roundOpt.isPresent()) {
+                Round round = roundOpt.get();
+
+                // User-specific flags
+                if (user != null) {
+                    state.setAnswerSubmitted(answerRepository.existsByRoundIdAndUserId(round.getId(), user.getId()));
+                    state.setVoteSubmitted(voteRepository.existsByRoundIdAndVoterId(round.getId(), user.getId()));
+                }
+
+                // Populate question
+                if (round.getQuestionId() != null) {
+                    try {
+                        Map<String, Object> q = questionService.getQuestionById(round.getQuestionId());
+                        GameStateGetDTO.QuestionDTO qDto = new GameStateGetDTO.QuestionDTO();
+                        qDto.setId(Long.valueOf(q.get("id").toString()));
+                        qDto.setText(q.get("question").toString());
+                        qDto.setCategory(q.containsKey("category") ? q.get("category").toString() : "General Knowledge");
+                        state.setQuestion(qDto);
+                    } catch (Exception ignored) {}
+                }
+
+                // Populate answers
+                List<Answer> answers = answerRepository.findByRoundId(round.getId());
+                String correctAnswer = round.getCorrectAnswer();
+                List<GameStateGetDTO.AnswerDTO> answerDTOs = new ArrayList<>();
+                for (Answer answer : answers) {
+                    GameStateGetDTO.AnswerDTO aDto = new GameStateGetDTO.AnswerDTO();
+                    aDto.setId(answer.getId());
+                    aDto.setText(answer.getContent());
+                    aDto.setIsCorrect(correctAnswer != null && correctAnswer.equalsIgnoreCase(answer.getContent().trim()));
+                    userRepository.findById(answer.getUserId()).ifPresent(u -> aDto.setAuthorUsername(u.getUsername()));
+                    List<String> voters = new ArrayList<>();
+                    voteRepository.findByAnswerId(answer.getId()).forEach(v ->
+                        userRepository.findById(v.getVoterId()).ifPresent(u -> voters.add(u.getUsername()))
+                    );
+                    aDto.setVoters(voters);
+                    answerDTOs.add(aDto);
+                }
+                state.setAnswers(answerDTOs);
             }
-       }
+        }
         return state;
     }
 
-    // Sends Current Game State to all players. -> /topic/game/{gameCode} websocket makes sure update is instantly.
+    // Sends enriched game state to all players via WebSocket.
     private void sendGameUpdate(Game game) {
-        messagingTemplate.convertAndSend("/topic/game/" + game.getCode(), DTOMapper.INSTANCE.convertEntityToGameStateGetDTO(game));
+        messagingTemplate.convertAndSend("/topic/game/" + game.getCode(), buildGameState(game, null));
     }
 
     private void assignQuestionToRound(Game game, Round round) {

@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Game;
-import tools.jackson.core.type.TypeReference;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class QuestionService {
@@ -29,6 +29,14 @@ public class QuestionService {
         } catch (IOException e) {
             throw new RuntimeException("Failed to load questions.json", e);
         }
+    }
+
+    // Get a question by id
+    public Map<String, Object> getQuestionById(Long id) {
+        return questions.stream()
+                .filter(q -> Long.valueOf(q.get("id").toString()).equals(id))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Question not found: " + id));
     }
 
     // Pick a random question that hasn't been used in this game yet

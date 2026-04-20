@@ -2,7 +2,9 @@ package ch.uzh.ifi.hase.soprafs26.rest.dto;
 
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -10,6 +12,39 @@ import java.util.Map;
  * Exposes current round, stage, deadline, submitted flags, scores, and other metadata for frontend rendering.
  */
 public class GameStateGetDTO {
+
+    public static class QuestionDTO {
+        private Long id;
+        private String text;
+        private String category;
+
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public String getText() { return text; }
+        public void setText(String text) { this.text = text; }
+        public String getCategory() { return category; }
+        public void setCategory(String category) { this.category = category; }
+    }
+
+    public static class AnswerDTO {
+        private Long id;
+        private String text;
+        private String authorUsername;
+        private List<String> voters = new ArrayList<>();
+        private Boolean isCorrect = false;
+
+        public Long getId() { return id; }
+        public void setId(Long id) { this.id = id; }
+        public String getText() { return text; }
+        public void setText(String text) { this.text = text; }
+        public String getAuthorUsername() { return authorUsername; }
+        public void setAuthorUsername(String authorUsername) { this.authorUsername = authorUsername; }
+        public List<String> getVoters() { return voters; }
+        public void setVoters(List<String> voters) { this.voters = voters; }
+        public Boolean getIsCorrect() { return isCorrect; }
+        public void setIsCorrect(Boolean isCorrect) { this.isCorrect = isCorrect; }
+    }
+
     private Long id;
     private String code;
     private String hostname;
@@ -23,6 +58,8 @@ public class GameStateGetDTO {
     private Boolean voteSubmitted;
     private Map<String, Integer> players = new HashMap<>();
     private Map<String, Integer> scores = new HashMap<>();
+    private QuestionDTO question;
+    private List<AnswerDTO> answers = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -127,4 +164,10 @@ public class GameStateGetDTO {
     public void setScores(Map<String, Integer> scores) {
         this.scores = scores;
     }
+
+    public QuestionDTO getQuestion() { return question; }
+    public void setQuestion(QuestionDTO question) { this.question = question; }
+
+    public List<AnswerDTO> getAnswers() { return answers; }
+    public void setAnswers(List<AnswerDTO> answers) { this.answers = answers; }
 }
