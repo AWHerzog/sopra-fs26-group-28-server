@@ -1,5 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Map;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Answer;
@@ -37,6 +39,8 @@ import java.util.Optional;
 @Transactional
 @Service
 public class GameFlowService {
+
+    private static final Logger log = LoggerFactory.getLogger(GameFlowService.class);
 
     private final GameRepository gameRepository;
     private final RoundRepository roundRepository;
@@ -148,6 +152,8 @@ public class GameFlowService {
 
         // Auto-advance to VOTING if all players have answered
         long answerCount = answerRepository.countByRoundId(round.getId());
+        log.info("submitAnswer: user={}, answerCount={}, playerCount={}, gameStatus={}",
+                user.getUsername(), answerCount, game.getPlayers().size(), game.getStatus());
         if (answerCount >= game.getPlayers().size()) {
             addCorrectAnswerOption(round);
             game.setStatus(GameStatus.VOTING);
