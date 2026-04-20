@@ -118,6 +118,11 @@ public class GameFlowService {
 
         Round round = getCurrentRound(game);
 
+        // Reject if answer is missing
+        if (payload.getAnswerText() == null || payload.getAnswerText().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Answer text is required");
+        }
+
         // Reject if answer matches correct answer
         String correctAnswer = round.getCorrectAnswer();
         if (correctAnswer != null && correctAnswer.equalsIgnoreCase(payload.getAnswerText().trim())) {
