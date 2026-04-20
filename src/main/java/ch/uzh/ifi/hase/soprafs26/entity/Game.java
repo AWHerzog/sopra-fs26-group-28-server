@@ -6,6 +6,8 @@ import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 
 import java.io.Serializable;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,6 +53,11 @@ public class Game implements Serializable {
 	@MapKeyColumn(name = "username")
 	@Column(name = "points")
 	private Map<String, Integer> players = new HashMap<>();
+
+	@ElementCollection
+	@CollectionTable(name = "game_used_questions", joinColumns = @JoinColumn(name = "game_id"))
+	@Column(name = "question_id")
+	private List<Long> usedQuestionIds = new ArrayList<>();
 	
 	public Long getId() {
 		return id;
@@ -131,5 +138,9 @@ public class Game implements Serializable {
 
 	public void setStageDeadline(LocalDateTime stageDeadline) {
 		this.stageDeadline = stageDeadline;
+	}
+
+	public List<Long> getUsedQuestionIds() {
+		return usedQuestionIds;
 	}
 }
