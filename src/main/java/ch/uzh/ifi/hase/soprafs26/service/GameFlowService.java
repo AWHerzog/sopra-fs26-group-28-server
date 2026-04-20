@@ -104,7 +104,7 @@ public class GameFlowService {
 
     // Players submit answer
     public GameStateGetDTO submitAnswer(String gameCode, User user, AnswerPostDTO payload) {
-        Game game = getGameByCode(gameCode);
+        Game game = getGameByCodeForUpdate(gameCode);
 
         // Game must be in ANSWERING stage
         if (game.getStatus() != GameStatus.ANSWERING) {
@@ -166,7 +166,7 @@ public class GameFlowService {
 
     // Players submit vote
     public GameStateGetDTO submitVote(String gameCode, User user, VotePostDTO payload) {
-        Game game = getGameByCode(gameCode);
+        Game game = getGameByCodeForUpdate(gameCode);
 
         // Game must be in Voting stage
         if (game.getStatus() != GameStatus.VOTING) {
@@ -338,6 +338,15 @@ public class GameFlowService {
     // fetches game by code, throws 404 if not found
     private Game getGameByCode(String gameCode) {
         Game game = gameRepository.findByCode(gameCode);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+        return game;
+    }
+
+    // fetches game with pessimistic write lock to prevent race conditions
+    private Game getGameByCodeForUpdate(String gameCode) {
+        Game game = gameRepository.findByCodeForUpdate(gameCode);
         if (game == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
         }
