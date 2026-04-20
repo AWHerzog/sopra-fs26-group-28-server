@@ -62,7 +62,9 @@ public class GameController {
 	public GameStateGetDTO submitAnswer(@PathVariable String code, @RequestBody Map<String, Object> body, @RequestHeader("Authorization") String token){
 		User user = userService.checkTokenAuthenticity(token);
 		AnswerPostDTO dto = new AnswerPostDTO();
-		dto.setAnswerText(body.get("answerText") != null ? body.get("answerText").toString() : null);
+		String answerText = body.get("answerText") != null ? body.get("answerText").toString()
+				: body.get("text") != null ? body.get("text").toString() : null;
+		dto.setAnswerText(answerText);
 		dto.setQuestionId(body.containsKey("questionId") && body.get("questionId") != null ? Long.valueOf(body.get("questionId").toString()) : null);
 		return gameFlowService.submitAnswer(code, user, dto);
 	}
