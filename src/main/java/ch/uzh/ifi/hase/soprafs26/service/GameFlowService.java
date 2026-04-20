@@ -149,6 +149,7 @@ public class GameFlowService {
         // Auto-advance to VOTING if all players have answered
         long answerCount = answerRepository.countByRoundId(round.getId());
         if (answerCount >= game.getPlayers().size()) {
+            addCorrectAnswerOption(round);
             game.setStatus(GameStatus.VOTING);
             game.setStageDeadline(LocalDateTime.now().plusSeconds(30));
             game = gameRepository.save(game);
@@ -190,8 +191,8 @@ public class GameFlowService {
         Answer answer = answerRepository.findById(payload.getAnswerId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Answer not found"));
 
-        // User cannot vote for own answer
-        if (answer.getUserId().equals(user.getId())) {
+        // User cannot vote for own answer (null userId = correct answer option, always allowed)
+        if (answer.getUserId() != null && answer.getUserId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot vote for own answer");
         }
 
@@ -232,8 +233,8 @@ public class GameFlowService {
 
             // 30 second timer for everyone why answering. Also auto advance if all answers are in before deadline (can be implemented later)
             case ANSWERING:
+                addCorrectAnswerOption(getCurrentRound(game));
                 game.setStatus(GameStatus.VOTING);
-                // Set deadline for voting stage, 30 seconds 
                 game.setStageDeadline(LocalDateTime.now().plusSeconds(30));
                 break;
 
@@ -404,6 +405,23 @@ public class GameFlowService {
     // Sends enriched game state to all players via WebSocket.
     private void sendGameUpdate(Game game) {
         messagingTemplate.convertAndSend("/topic/game/" + game.getCode(), buildGameState(game, null));
+    }
+
+    // Adds the correct answer as a voting option (userId=null marks it as the real answer)
+    private void addCorrectAnswerOption(Round round) {
+        String correct = round.getCorrectAnswer();
+        if (correct == null || correct.isBlank()) return;
+        // Only add if not already present
+        boolean alreadyAdded = answerRepository.findByRoundId(round.getId()).stream()
+                .anyMatch(a -> a.getUserId() == null);
+        if (alreadyAdded) return;
+        Answer correctAnswer = new Answer();
+        correctAnswer.setRoundId(round.getId());
+        correctAnswer.setUserId(null);
+        correctAnswer.setContent(correct);
+        correctAnswer.setIsCorrect(true);
+        answerRepository.save(correctAnswer);
+        answerRepository.flush();
     }
 
     private void assignQuestionToRound(Game game, Round round) {

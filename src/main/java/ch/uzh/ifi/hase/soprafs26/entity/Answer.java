@@ -32,7 +32,7 @@ public class Answer implements Serializable {
     @Column(nullable = false)
     private Long roundId;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Long userId;
 
     @Column(nullable = false, columnDefinition = "TEXT")
