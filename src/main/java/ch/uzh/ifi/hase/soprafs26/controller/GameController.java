@@ -59,16 +59,21 @@ public class GameController {
 
 	@PostMapping("/games/{code}/answers")
 	@ResponseStatus(HttpStatus.OK)
-	public GameStateGetDTO submitAnswer(@PathVariable String code, @RequestBody AnswerPostDTO answerPostDTO, @RequestHeader("Authorization") String token){
+	public GameStateGetDTO submitAnswer(@PathVariable String code, @RequestBody Map<String, Object> body, @RequestHeader("Authorization") String token){
 		User user = userService.checkTokenAuthenticity(token);
-		return gameFlowService.submitAnswer(code, user, answerPostDTO);
+		AnswerPostDTO dto = new AnswerPostDTO();
+		dto.setAnswerText(body.get("answerText") != null ? body.get("answerText").toString() : null);
+		dto.setQuestionId(body.containsKey("questionId") && body.get("questionId") != null ? Long.valueOf(body.get("questionId").toString()) : null);
+		return gameFlowService.submitAnswer(code, user, dto);
 	}
 
 	@PostMapping("/games/{code}/votes")
 	@ResponseStatus(HttpStatus.OK)
-	public GameStateGetDTO submitVote(@PathVariable String code, @RequestBody VotePostDTO votePostDTO, @RequestHeader("Authorization") String token){
+	public GameStateGetDTO submitVote(@PathVariable String code, @RequestBody Map<String, Object> body, @RequestHeader("Authorization") String token){
 		User user = userService.checkTokenAuthenticity(token);
-		return gameFlowService.submitVote(code, user, votePostDTO);
+		VotePostDTO dto = new VotePostDTO();
+		dto.setAnswerId(body.get("answerId") != null ? Long.valueOf(body.get("answerId").toString()) : null);
+		return gameFlowService.submitVote(code, user, dto);
 	}
 
 	@GetMapping("/games/{code}/state")
