@@ -108,15 +108,19 @@ public class GameFlowService {
 
     // Players submit answer
     public GameStateGetDTO submitAnswer(String gameCode, User user, AnswerPostDTO payload) {
+        log.info("submitAnswer ENTRY: user={}, gameCode={}, answerText={}", user.getUsername(), gameCode, payload.getAnswerText());
         Game game = getGameByCodeForUpdate(gameCode);
+        log.info("submitAnswer: game status={}, players={}", game.getStatus(), game.getPlayers().keySet());
 
         // Game must be in ANSWERING stage
         if (game.getStatus() != GameStatus.ANSWERING) {
+            log.warn("submitAnswer REJECTED: not in ANSWERING stage, current={}", game.getStatus());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not in ANSWERING stage");
         }
 
         // User must be part of the game
         if (!game.getPlayers().containsKey(user.getUsername())) {
+            log.warn("submitAnswer REJECTED: user '{}' not in players {}", user.getUsername(), game.getPlayers().keySet());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of the game");
         }
 
@@ -413,7 +417,9 @@ public class GameFlowService {
                     aDto.setId(answer.getId());
                     aDto.setText(answer.getContent());
                     aDto.setIsCorrect(correctAnswer != null && correctAnswer.equalsIgnoreCase(answer.getContent().trim()));
-                    userRepository.findById(answer.getUserId()).ifPresent(u -> aDto.setAuthorUsername(u.getUsername()));
+                    if (answer.getUserId() != null) {
+                        userRepository.findById(answer.getUserId()).ifPresent(u -> aDto.setAuthorUsername(u.getUsername()));
+                    }
                     List<String> voters = new ArrayList<>();
                     voteRepository.findByAnswerId(answer.getId()).forEach(v ->
                         userRepository.findById(v.getVoterId()).ifPresent(u -> voters.add(u.getUsername()))
