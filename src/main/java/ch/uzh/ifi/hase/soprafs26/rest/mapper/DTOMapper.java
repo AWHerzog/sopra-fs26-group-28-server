@@ -65,6 +65,8 @@ public interface DTOMapper {
 	@Mapping(source = "stageDeadline", target = "stageDeadline")
 	@Mapping(target = "answerSubmitted", ignore = true)
 	@Mapping(target = "voteSubmitted", ignore = true)
+	@Mapping(target = "question", ignore = true)
+	@Mapping(target = "answers", ignore = true)
 	@Mapping(source = "players", target = "players")
 	@Mapping(source = "players", target = "scores")
 	GameStateGetDTO convertEntityToGameStateGetDTO(Game game);
