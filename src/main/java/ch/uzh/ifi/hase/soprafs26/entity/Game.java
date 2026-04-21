@@ -24,7 +24,7 @@ public class Game implements Serializable {
 	@GeneratedValue
 	private Long id;
 
-	@Column(nullable = false, unique = true)
+	@Column(nullable = false, unique = false)
 	private String hostname;
 
 	@Column(nullable = false, unique = false)

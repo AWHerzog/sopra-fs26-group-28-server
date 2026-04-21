@@ -23,6 +23,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+import java.util.Iterator;
 
 
 @Service
@@ -71,6 +72,32 @@ public class GameService {
         return game;
     }
 
+	public void leaveGame(String code, String username) {
+		Game game = gameRepository.findByCode(code);
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
+		if (game.getHostname().equals(username)){
+			if (game.getPlayers().size() == 1){
+				gameRepository.delete(game);
+				gameRepository.flush();
+				return;
+			}
+			//set other player host
+			Iterator<String> iterator = game.getPlayers().keySet().iterator();
+			iterator.next(); 
+			String newHost = iterator.next(); 
+			game.setHostname(newHost);
+			
+		}
+		//if player normal player 
+		game.removePlayer(username);
+		game = gameRepository.save(game);
+		gameRepository.flush();
+
+		sendGameUpdate(game);
+	}
 
 	/**
 	 * This is a helper method that will send a update to all the subscribed players
