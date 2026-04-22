@@ -15,7 +15,7 @@ If you consider to use IntelliJ as your IDE of choice, you can make use of your 
 2. Accept to import the project as a `gradle project`
 3. To build right click the `build.gradle` file and choose `Run Build`
 
-### VS Code
+### VS Codes
 The following extensions can help you get started more easily:
 -   `vmware.vscode-spring-boot`
 -   `vscjava.vscode-spring-initializr`
