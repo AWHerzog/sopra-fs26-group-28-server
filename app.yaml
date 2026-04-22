@@ -8,7 +8,10 @@ runtime_config:
   operating_system: ubuntu22
   runtime_version: "17"
 
-entrypoint: java -jar /app/build/libs/soprafs26.jar
+entrypoint: java -jar /workspace/build/libs/soprafs26.jar
+
+manual_scaling:
+  instances: 1
 
 resources:
   cpu: 1
