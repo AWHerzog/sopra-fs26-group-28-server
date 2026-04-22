@@ -8,6 +8,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
@@ -30,6 +37,9 @@ public class UserServiceIntegrationTest {
 	@Autowired
 	private UserService userService;
 
+	@Mock
+    private SimpMessagingTemplate messagingTemplate;
+
 	@BeforeEach
 	public void setup() {
 		userRepository.deleteAll();
@@ -41,18 +51,16 @@ public class UserServiceIntegrationTest {
 		assertNull(userRepository.findByUsername("testUsername"));
 
 		User testUser = new User();
-		testUser.setName("testName");
 		testUser.setUsername("testUsername");
+		testUser.setPassword("password");
 
 		// when
 		User createdUser = userService.createUser(testUser);
 
 		// then
-		assertEquals(testUser.getId(), createdUser.getId());
-		assertEquals(testUser.getName(), createdUser.getName());
 		assertEquals(testUser.getUsername(), createdUser.getUsername());
 		assertNotNull(createdUser.getToken());
-		assertEquals(UserStatus.OFFLINE, createdUser.getStatus());
+		assertEquals(UserStatus.ONLINE, createdUser.getStatus());
 	}
 
 	@Test
@@ -60,16 +68,16 @@ public class UserServiceIntegrationTest {
 		assertNull(userRepository.findByUsername("testUsername"));
 
 		User testUser = new User();
-		testUser.setName("testName");
 		testUser.setUsername("testUsername");
+		testUser.setPassword("password");
 		userService.createUser(testUser);
 
 		// attempt to create second user with same username
 		User testUser2 = new User();
 
 		// change the name but forget about the username
-		testUser2.setName("testName2");
 		testUser2.setUsername("testUsername");
+		testUser2.setPassword("password");
 
 		// check that an error is thrown
 		assertThrows(ResponseStatusException.class, () -> userService.createUser(testUser2));

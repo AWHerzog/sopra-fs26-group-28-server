@@ -11,6 +11,7 @@ import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * User Controller
@@ -48,11 +49,43 @@ public class UserController {
 	@ResponseBody
 	public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
 		// convert API user to internal representation
-		User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
+		User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO); //frontend still needs to be chanhed here for correct input
 
 		// create user
 		User createdUser = userService.createUser(userInput);
 		// convert internal representation of user back to API
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
 	}
+
+	@GetMapping("/users/{userId}")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public UserGetDTO getUserById(@PathVariable Long userId) {
+		User user = userService.getUserById(userId);
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+	}
+
+	@PostMapping("/users/login")
+	@ResponseStatus(HttpStatus.CREATED)
+	@ResponseBody
+	public UserGetDTO loginUser(@RequestBody UserPostDTO userPostDTO) {
+		// convert API user to internal representation
+		User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO); //frontend still needs to be chanhed here for correct input
+
+		// login user
+		User loggedInUser = userService.loginUser(userInput);
+		// convert internal representation of user back to API
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedInUser);
+	}
+
+	
+
+	@PostMapping("/users/logout")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public void logout(@RequestHeader("Authorization") String token) {
+		userService.checkTokenAuthenticity(token);
+		userService.logoutUser(token);
+	}
+
 }
