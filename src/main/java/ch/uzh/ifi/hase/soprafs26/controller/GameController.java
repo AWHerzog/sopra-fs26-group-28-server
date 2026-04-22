@@ -50,6 +50,14 @@ public class GameController {
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(gameService.joinGame(code, username));
     }
 
+	@PostMapping("/games/{code}/leave")
+	@ResponseStatus(HttpStatus.OK)
+    public void leave(@PathVariable String code, @RequestHeader("Authorization") String token) {
+		String username = userService.checkTokenAuthenticity(token).getUsername();
+		gameService.leaveGame(code, username);
+    }
+
+
 	@PostMapping("/games/{code}/start")
 	@ResponseStatus(HttpStatus.OK)
 	public GameStateGetDTO start(@PathVariable String code, @RequestBody GameStartPostDTO gameStartPostDTO, @RequestHeader("Authorization") String token){

@@ -332,6 +332,14 @@ public class GameFlowService {
         game = gameRepository.save(game);
         gameRepository.flush();
 
+        //update points for users 
+        for (Map.Entry<String, Integer> entry : game.getPlayers().entrySet()){
+            User user = userRepository.findByUsername(entry.getKey());
+            user.setPoints(user.getPoints() + entry.getValue());
+            userRepository.save(user);
+        }
+        userRepository.flush();
+
         sendGameUpdate(game);
         return buildGameState(game, null);
     }
@@ -401,11 +409,18 @@ public class GameFlowService {
                 // Populate submittedUsernames (only real players, not correct answer entry)
                 List<Answer> allAnswers = answerRepository.findByRoundId(round.getId());
                 List<String> submittedUsernames = new ArrayList<>();
-                for (Answer a : allAnswers) {
+
+                if (game.getStatus() == GameStatus.ANSWERING || game.getStatus() == GameStatus.WAITING){
+                    for (Answer a : allAnswers) {
                     if (a.getUserId() != null) {
                         userRepository.findById(a.getUserId()).ifPresent(u -> submittedUsernames.add(u.getUsername()));
+                        }
                     }
+                } else if (game.getStatus() == GameStatus.VOTING || game.getStatus() == GameStatus.WAITING) {
+                    voteRepository.findByRoundId(round.getId()).forEach(v ->
+                        userRepository.findById(v.getVoterId()).ifPresent(u -> submittedUsernames.add(u.getUsername())));
                 }
+                
                 state.setSubmittedUsernames(submittedUsernames);
 
                 // Populate answers
