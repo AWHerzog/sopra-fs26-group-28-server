@@ -1,7 +1,16 @@
 # https://cloud.google.com/appengine/docs/the-appengine-environments#comparing_high-level_features
-# https://cloud.google.com/appengine/docs/standard
+# https://cloud.google.com/appengine/docs/flexible/java
 
-runtime: java17
-instance_class: F2
+runtime: java
+env: flex
 
-entrypoint: java -jar /workspace/build/libs/soprafs26.jar
+runtime_config:
+  operating_system: ubuntu22
+  runtime_version: "17"
+
+entrypoint: java -jar /app/build/libs/soprafs26.jar
+
+resources:
+  cpu: 1
+  memory_gb: 1.7
+  disk_size_gb: 10
