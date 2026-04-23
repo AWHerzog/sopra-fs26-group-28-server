@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.entity.Game;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
@@ -45,7 +46,9 @@ public class GameController {
     @PostMapping("/games/join")
 	@ResponseStatus(HttpStatus.OK)
     public GameGetDTO join(@RequestBody Map<String, String> responseBody, @RequestHeader("Authorization") String token) {
-		String code = responseBody.get("code").trim();
+		String rawCode = responseBody.get("code");
+		if (rawCode == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing game code");
+		String code = rawCode.trim();
 		String username = userService.checkTokenAuthenticity(token).getUsername();
         return DTOMapper.INSTANCE.convertEntityToGameGetDTO(gameService.joinGame(code, username));
     }

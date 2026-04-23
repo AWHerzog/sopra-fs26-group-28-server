@@ -289,6 +289,11 @@ public class GameFlowService {
 
     // 1 Point if voted for correct answer, 1 point if people voted for your answer.
     public void computeRoundScores(String gameCode, Round round) {
+        if (round.isScored()) return;
+        round.setScored(true);
+        roundRepository.save(round);
+        roundRepository.flush();
+
         Game game = getGameByCode(gameCode);
 
         List<Answer> answers = answerRepository.findByRoundId(round.getId());
@@ -332,9 +337,10 @@ public class GameFlowService {
         game = gameRepository.save(game);
         gameRepository.flush();
 
-        //update points for users 
+        //update points for users
         for (Map.Entry<String, Integer> entry : game.getPlayers().entrySet()){
             User user = userRepository.findByUsername(entry.getKey());
+            if (user == null) continue;
             user.setPoints(user.getPoints() + entry.getValue());
             userRepository.save(user);
         }
@@ -416,7 +422,7 @@ public class GameFlowService {
                         userRepository.findById(a.getUserId()).ifPresent(u -> submittedUsernames.add(u.getUsername()));
                         }
                     }
-                } else if (game.getStatus() == GameStatus.VOTING || game.getStatus() == GameStatus.WAITING) {
+                } else if (game.getStatus() == GameStatus.VOTING) {
                     voteRepository.findByRoundId(round.getId()).forEach(v ->
                         userRepository.findById(v.getVoterId()).ifPresent(u -> submittedUsernames.add(u.getUsername())));
                 }
