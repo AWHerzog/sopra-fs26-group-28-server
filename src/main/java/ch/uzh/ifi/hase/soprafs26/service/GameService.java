@@ -23,7 +23,6 @@ import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.util.Iterator;
 
 
 @Service
@@ -85,9 +84,10 @@ public class GameService {
 				return;
 			}
 			//set other player host
-			Iterator<String> iterator = game.getPlayers().keySet().iterator();
-			iterator.next(); 
-			String newHost = iterator.next(); 
+			String newHost = game.getPlayers().keySet().stream()
+				.filter(name -> !name.equals(username))
+				.findFirst()
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No other player to promote to host"));
 			game.setHostname(newHost);
 			
 		}
@@ -126,7 +126,7 @@ public class GameService {
 	}
 
 	private void sendGameUpdate(Game game) {
-        messagingTemplate.convertAndSend("/topic/game/" + game.getCode(), DTOMapper.INSTANCE.convertEntityToGameGetDTO(game));
+        messagingTemplate.convertAndSend("/topic/game/" + game.getCode(), DTOMapper.INSTANCE.convertEntityToGameStateGetDTO(game));
     }
 
 }
