@@ -350,6 +350,66 @@ public class GameFlowService {
         return buildGameState(game, null);
     }
 
+    public void leaveGame(String gameCode, String username) {
+        Game game = getGameByCode(gameCode);
+
+        // Last player: delete the game regardless of status
+        if (game.getPlayers().size() <= 1) {
+            gameRepository.delete(game);
+            gameRepository.flush();
+            return;
+        }
+
+        // Host leaving: promote another player before removal
+        if (game.getHostname().equals(username)) {
+            String newHost = game.getPlayers().keySet().stream()
+                .filter(name -> !name.equals(username))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No other player to promote to host"));
+            game.setHostname(newHost);
+        }
+
+        game.removePlayer(username);
+        game = gameRepository.save(game);
+        gameRepository.flush();
+
+        // Mid-game: check if the leaving player was the last one needed to submit or vote
+        if (game.getStatus() == GameStatus.ANSWERING || game.getStatus() == GameStatus.VOTING) {
+            game = checkAndAutoAdvanceAfterLeave(game);
+        }
+
+        sendGameUpdate(game);
+    }
+
+    private Game checkAndAutoAdvanceAfterLeave(Game game) {
+        Round round = roundRepository.findByGameIdAndRoundNumber(game.getId(), game.getCurrentRound())
+            .orElse(null);
+        if (round == null) return game;
+
+        if (game.getStatus() == GameStatus.ANSWERING) {
+            long answerCount = answerRepository.countByRoundId(round.getId());
+            if (answerCount >= game.getPlayers().size()) {
+                addCorrectAnswerOption(round);
+                game.setStatus(GameStatus.VOTING);
+                game.setStageDeadline(LocalDateTime.now().plusSeconds(30));
+                game = gameRepository.save(game);
+                gameRepository.flush();
+            }
+        } else if (game.getStatus() == GameStatus.VOTING) {
+            long voteCount = voteRepository.countByRoundId(round.getId());
+            if (voteCount >= game.getPlayers().size()) {
+                computeRoundScores(game.getCode(), round);
+                round.setCompletedAt(LocalDateTime.now());
+                roundRepository.save(round);
+                game.setStatus(GameStatus.ROUND_RESULT);
+                game.setStageDeadline(null);
+                game = gameRepository.save(game);
+                gameRepository.flush();
+            }
+        }
+        return game;
+    }
+
     // Returns current game state
     public GameStateGetDTO getCurrentGameState(String gameCode, User user) {
         Game game = getGameByCode(gameCode);

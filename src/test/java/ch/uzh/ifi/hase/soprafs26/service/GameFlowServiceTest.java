@@ -422,4 +422,59 @@ public class GameFlowServiceTest {
         assertThrows(ResponseStatusException.class,
                 () -> gameFlowService.advanceStage("abc123"));
     }
+
+    // --- leaveGame ---
+
+    @Test
+    public void leaveGame_lastPlayer_deletesGame() {
+        testGame.getPlayers().clear();
+        testGame.addPlayer("hostUser", 0);
+        testGame.setStatus(GameStatus.WAITING);
+
+        gameFlowService.leaveGame("abc123", "hostUser");
+
+        Mockito.verify(gameRepository).delete(testGame);
+    }
+
+    @Test
+    public void leaveGame_nonHost_removesPlayer() {
+        testGame.setStatus(GameStatus.WAITING);
+
+        gameFlowService.leaveGame("abc123", "player2");
+
+        assertFalse(testGame.getPlayers().containsKey("player2"));
+        assertEquals("hostUser", testGame.getHostname());
+    }
+
+    @Test
+    public void leaveGame_host_promotesNewHost() {
+        testGame.setStatus(GameStatus.WAITING);
+
+        gameFlowService.leaveGame("abc123", "hostUser");
+
+        assertEquals("player2", testGame.getHostname());
+        assertFalse(testGame.getPlayers().containsKey("hostUser"));
+    }
+
+    @Test
+    public void leaveGame_duringAnswering_autoAdvancesToVotingIfAllAnswered() {
+        testGame.setStatus(GameStatus.ANSWERING);
+        // player2 leaves; hostUser has already answered → answerCount(1) >= playerCount(1)
+        Mockito.when(answerRepository.countByRoundId(Mockito.any())).thenReturn(1L);
+
+        gameFlowService.leaveGame("abc123", "player2");
+
+        assertEquals(GameStatus.VOTING, testGame.getStatus());
+    }
+
+    @Test
+    public void leaveGame_duringVoting_autoAdvancesToRoundResultIfAllVoted() {
+        testGame.setStatus(GameStatus.VOTING);
+        // player2 leaves; hostUser has already voted → voteCount(1) >= playerCount(1)
+        Mockito.when(voteRepository.countByRoundId(Mockito.any())).thenReturn(1L);
+
+        gameFlowService.leaveGame("abc123", "player2");
+
+        assertEquals(GameStatus.ROUND_RESULT, testGame.getStatus());
+    }
 }

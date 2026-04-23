@@ -57,7 +57,7 @@ public class GameController {
 	@ResponseStatus(HttpStatus.OK)
     public void leave(@PathVariable String code, @RequestHeader("Authorization") String token) {
 		String username = userService.checkTokenAuthenticity(token).getUsername();
-		gameService.leaveGame(code, username);
+		gameFlowService.leaveGame(code, username);
     }
 
 
