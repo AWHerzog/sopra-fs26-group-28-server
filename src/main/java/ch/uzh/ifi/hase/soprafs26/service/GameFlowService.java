@@ -353,6 +353,11 @@ public class GameFlowService {
     public void leaveGame(String gameCode, String username) {
         Game game = getGameByCode(gameCode);
 
+        //guard against calling leaveGame twice
+        if (!game.getPlayers().containsKey(username)){
+            return;
+        }
+
         // Last player: delete the game regardless of status
         if (game.getPlayers().size() <= 1) {
             gameRepository.delete(game);
