@@ -88,4 +88,8 @@ public class UserController {
 		userService.logoutUser(token);
 	}
 
+	@GetMapping("/_ah/health")
+	@ResponseStatus(HttpStatus.OK)
+	public void healthCheck() {}
+
 }

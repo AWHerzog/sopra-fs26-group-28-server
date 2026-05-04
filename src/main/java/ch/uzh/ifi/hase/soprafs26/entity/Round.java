@@ -41,6 +41,9 @@ public class Round implements Serializable {
     @Column(nullable = true)
     private String correctAnswer;
 
+    @Column(nullable = false)
+    private boolean scored = false;
+
     public Long getId() {
         return id;
     }
@@ -95,5 +98,13 @@ public class Round implements Serializable {
 
     public void setCorrectAnswer(String correctAnswer) {
         this.correctAnswer = correctAnswer;
+    }
+
+    public boolean isScored() {
+        return scored;
+    }
+
+    public void setScored(boolean scored) {
+        this.scored = scored;
     }
 }

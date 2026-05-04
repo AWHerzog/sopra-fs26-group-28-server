@@ -1,5 +1,34 @@
 # https://cloud.google.com/appengine/docs/the-appengine-environments#comparing_high-level_features
-# https://cloud.google.com/appengine/docs/standard
+# https://cloud.google.com/appengine/docs/flexible/java
 
-runtime: java17
-instance_class: F2
+runtime: java
+env: flex
+
+runtime_config:
+  operating_system: ubuntu22
+  runtime_version: "17"
+
+entrypoint: java -jar /workspace/build/libs/soprafs26.jar
+
+manual_scaling:
+  instances: 1
+
+resources:
+  cpu: 1
+  memory_gb: 1.7
+  disk_size_gb: 10
+
+liveness_check:
+  path: "/_ah/health"
+  check_interval_sec: 30
+  timeout_sec: 4
+  failure_threshold: 3
+  success_threshold: 2
+
+readiness_check:
+  path: "/_ah/health"
+  check_interval_sec: 5
+  timeout_sec: 4
+  failure_threshold: 2
+  success_threshold: 2
+  app_start_timeout_sec: 360
