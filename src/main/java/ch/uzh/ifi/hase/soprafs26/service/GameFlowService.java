@@ -85,11 +85,7 @@ public class GameFlowService {
         
         game.setCurrentRound(1);
         game.setStatus(GameStatus.ANSWERING);
-
-        // Set deadline
-        if (payload.getStageDurationSeconds() != null) {
-            game.setStageDeadline(LocalDateTime.now().plusSeconds(payload.getStageDurationSeconds()));
-        }
+        game.setStageDeadline(LocalDateTime.now().plusSeconds(30));
 
         // Save
         Round round = new Round();
@@ -221,7 +217,7 @@ public class GameFlowService {
             currentRound.setCompletedAt(LocalDateTime.now());
             roundRepository.save(currentRound);
             game.setStatus(GameStatus.ROUND_RESULT);
-            game.setStageDeadline(null);
+            game.setStageDeadline(LocalDateTime.now().plusSeconds(15));
             game = gameRepository.save(game);
             gameRepository.flush();
         }
@@ -234,14 +230,15 @@ public class GameFlowService {
     }
 
     public GameStateGetDTO advanceStage(String gameCode) {
-       Game game = getGameByCode(gameCode);
+        Game game = getGameByCodeForUpdate(gameCode);
 
-       // Right now if someone does not answer the field is empty in the next stage. His Unsaved answer is not taken into account. 
-       // If someone feels like changing this go ahead.
+        // Guard: only advance if the deadline has actually expired (prevents double-advance from race conditions)
+        if (game.getStageDeadline() != null && game.getStageDeadline().isAfter(LocalDateTime.now())) {
+            return buildGameState(game, null);
+        }
 
         switch (game.getStatus()) {
 
-            // 30 second timer for everyone why answering. Also auto advance if all answers are in before deadline (can be implemented later)
             case ANSWERING:
                 addCorrectAnswerOption(getCurrentRound(game));
                 game.setStatus(GameStatus.VOTING);
@@ -254,7 +251,6 @@ public class GameFlowService {
                 round.setCompletedAt(LocalDateTime.now());
                 roundRepository.save(round);
                 game.setStatus(GameStatus.ROUND_RESULT);
-                // Set deadline for round result stage, e.g. 15 seconds from now
                 game.setStageDeadline(LocalDateTime.now().plusSeconds(15));
                 break;
 
@@ -266,6 +262,7 @@ public class GameFlowService {
                 int nextRound = game.getCurrentRound() + 1;
                 game.setCurrentRound(nextRound);
                 game.setStatus(GameStatus.ANSWERING);
+                game.setStageDeadline(LocalDateTime.now().plusSeconds(30));
 
                 Round newRound = new Round();
                 newRound.setGameId(game.getId());
@@ -402,7 +399,7 @@ public class GameFlowService {
                 round.setCompletedAt(LocalDateTime.now());
                 roundRepository.save(round);
                 game.setStatus(GameStatus.ROUND_RESULT);
-                game.setStageDeadline(null);
+                game.setStageDeadline(LocalDateTime.now().plusSeconds(15));
                 game = gameRepository.save(game);
                 gameRepository.flush();
             }

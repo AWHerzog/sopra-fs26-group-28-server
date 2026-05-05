@@ -96,10 +96,4 @@ public class GameController {
 		return gameFlowService.getCurrentGameState(code, user);
 	}
 
-	@PostMapping("/games/{code}/advance")
-	@ResponseStatus(HttpStatus.OK)
-	public GameStateGetDTO advanceStage(@PathVariable String code, @RequestHeader("Authorization") String token){
-		userService.checkTokenAuthenticity(token);
-		return gameFlowService.advanceStage(code);
-	}
 }
