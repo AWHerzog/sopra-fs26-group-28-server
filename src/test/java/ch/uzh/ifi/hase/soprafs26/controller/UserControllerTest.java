@@ -7,6 +7,7 @@ import tools.jackson.databind.ObjectMapper;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.UserOnboardingPutDTO;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
 import org.junit.jupiter.api.Test;
@@ -26,8 +27,10 @@ import java.util.List;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -91,7 +94,79 @@ public class UserControllerTest {
 		mockMvc.perform(postRequest)
 				.andExpect(status().isCreated())
 				.andExpect(jsonPath("$.username", is(user.getUsername())))
-				.andExpect(jsonPath("$.status", is(user.getStatus().toString())));
+				.andExpect(jsonPath("$.status", is(user.getStatus().toString())))
+				.andExpect(jsonPath("$.onboardingCompleted", is(false)));
+	}
+
+	@Test
+	public void givenUser_whenGetUserById_thenReturnJson() throws Exception {
+		// given
+		User user = new User();
+		user.setId(1L);
+		user.setUsername("testUsername");
+		user.setStatus(UserStatus.ONLINE);
+		user.setOnboardingCompleted(true);
+
+		given(userService.getUserById(Mockito.anyLong())).willReturn(user);
+
+		// when/then
+		mockMvc.perform(get("/users/1").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.username", is(user.getUsername())))
+				.andExpect(jsonPath("$.onboardingCompleted", is(true)));
+	}
+
+	@Test
+	public void loginUser_validInput_userLoggedIn() throws Exception {
+		// given
+		User user = new User();
+		user.setUsername("testUsername");
+		user.setToken("1");
+		user.setStatus(UserStatus.ONLINE);
+		user.setOnboardingCompleted(true);
+
+		UserPostDTO userPostDTO = new UserPostDTO();
+		userPostDTO.setUsername("testUsername");
+		userPostDTO.setPassword("password");
+
+		given(userService.loginUser(Mockito.any())).willReturn(user);
+
+		// when/then
+		MockHttpServletRequestBuilder postRequest = post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(asJsonString(userPostDTO));
+
+		mockMvc.perform(postRequest)
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.username", is(user.getUsername())))
+				.andExpect(jsonPath("$.onboardingCompleted", is(true)));
+	}
+
+	@Test
+	public void updateOnboardingCompletion_validInput_userUpdated() throws Exception {
+		// given
+		User user = new User();
+		user.setId(1L);
+		user.setUsername("testUsername");
+		user.setStatus(UserStatus.ONLINE);
+		user.setOnboardingCompleted(true);
+
+		UserOnboardingPutDTO onboardingPutDTO = new UserOnboardingPutDTO();
+		onboardingPutDTO.setOnboardingCompleted(true);
+
+		given(userService.updateOnboardingCompletion(Mockito.anyLong(), Mockito.anyBoolean())).willReturn(user);
+
+		// when/then
+		MockHttpServletRequestBuilder putRequest = put("/users/1/onboarding")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(asJsonString(onboardingPutDTO));
+
+		mockMvc.perform(putRequest)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.username", is(user.getUsername())))
+				.andExpect(jsonPath("$.onboardingCompleted", is(true)));
+
+		verify(userService).updateOnboardingCompletion(Mockito.anyLong(), Mockito.anyBoolean());
 	}
 
 	/**

@@ -10,6 +10,7 @@ public class UserGetDTO {
 	private UserStatus status;
 	private LocalDateTime creationDate;
 	private int points;
+	private boolean onboardingCompleted;
 	private String token;
 
 	
@@ -52,6 +53,14 @@ public class UserGetDTO {
 
 	public void setPoints(int points){
 		this.points = points;
+	}
+
+	public boolean isOnboardingCompleted() {
+		return onboardingCompleted;
+	}
+
+	public void setOnboardingCompleted(boolean onboardingCompleted) {
+		this.onboardingCompleted = onboardingCompleted;
 	}
 
 	public String getToken(){
