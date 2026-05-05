@@ -37,6 +37,7 @@ public class DTOMapperTest {
 		user.setUsername("firstname@lastname");
 		user.setStatus(UserStatus.OFFLINE);
 		user.setToken("1");
+		user.setOnboardingCompleted(true);
 
 		// MAP -> Create UserGetDTO
 		UserGetDTO userGetDTO = DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
@@ -44,5 +45,6 @@ public class DTOMapperTest {
 		// check content
 		assertEquals(user.getUsername(), userGetDTO.getUsername());
 		assertEquals(user.getStatus(), userGetDTO.getStatus());
+		assertEquals(user.isOnboardingCompleted(), userGetDTO.isOnboardingCompleted());
 	}
 }

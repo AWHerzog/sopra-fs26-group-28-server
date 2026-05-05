@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.UserOnboardingPutDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
@@ -63,6 +64,18 @@ public class UserController {
 	public UserGetDTO getUserById(@PathVariable Long userId) {
 		User user = userService.getUserById(userId);
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+	}
+
+	@PutMapping("/users/{userId}/onboarding")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public UserGetDTO updateOnboardingCompletion(
+			@PathVariable Long userId,
+			@RequestBody UserOnboardingPutDTO userOnboardingPutDTO) {
+		User updatedUser = userService.updateOnboardingCompletion(
+				userId,
+				userOnboardingPutDTO.isOnboardingCompleted());
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(updatedUser);
 	}
 
 	@PostMapping("/users/login")

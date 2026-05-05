@@ -45,6 +45,9 @@ public class User implements Serializable {
 	@Column(nullable = false)
 	private int points;
 
+	@Column(nullable = false)
+	private boolean onboardingCompleted;
+
 	
 	public Long getId() {
 		return id;
@@ -101,5 +104,13 @@ public class User implements Serializable {
 
 	public void setPoints(int points){
 		this.points = points;
+	}
+
+	public boolean isOnboardingCompleted() {
+		return onboardingCompleted;
+	}
+
+	public void setOnboardingCompleted(boolean onboardingCompleted) {
+		this.onboardingCompleted = onboardingCompleted;
 	}
 }
