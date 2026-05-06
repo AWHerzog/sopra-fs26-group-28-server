@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.LeaderboardEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
@@ -86,6 +87,14 @@ public class UserController {
 	public void logout(@RequestHeader("Authorization") String token) {
 		userService.checkTokenAuthenticity(token);
 		userService.logoutUser(token);
+	}
+
+	@GetMapping("/leaderboard")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public List<LeaderboardEntryDTO> getLeaderboard(@RequestHeader("Authorization") String token) {
+		userService.checkTokenAuthenticity(token);
+		return userService.getLeaderboard();
 	}
 
 	@GetMapping("/_ah/health")

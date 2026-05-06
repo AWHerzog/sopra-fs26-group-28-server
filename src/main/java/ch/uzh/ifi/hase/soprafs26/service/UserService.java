@@ -12,7 +12,10 @@ import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 
+import ch.uzh.ifi.hase.soprafs26.rest.dto.LeaderboardEntryDTO;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,6 +45,23 @@ public class UserService {
 
 	public List<User> getUsers() {
 		return this.userRepository.findAll();
+	}
+
+	public List<LeaderboardEntryDTO> getLeaderboard() {
+		List<User> users = userRepository.findAllByOrderByPointsDesc();
+		List<LeaderboardEntryDTO> leaderboard = new ArrayList<>();
+		int rank = 1;
+		for (int i = 0; i < users.size(); i++) {
+			if (i > 0 && users.get(i).getPoints() < users.get(i - 1).getPoints()) {
+				rank = i + 1;
+			}
+			LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
+			entry.setRank(rank);
+			entry.setUsername(users.get(i).getUsername());
+			entry.setPoints(users.get(i).getPoints());
+			leaderboard.add(entry);
+		}
+		return leaderboard;
 	}
 
 	public User createUser(User newUser) {
