@@ -52,6 +52,16 @@ public class UserServiceTest {
 		assertEquals(testUser.getUsername(), createdUser.getUsername());
 		assertNotNull(createdUser.getToken());
 		assertEquals(UserStatus.ONLINE, createdUser.getStatus());
+		assertFalse(createdUser.isOnboardingCompleted());
+	}
+
+	@Test
+	public void updateOnboardingCompletion_validUser_success() {
+		Mockito.when(userRepository.findById(Mockito.anyLong())).thenReturn(java.util.Optional.of(testUser));
+
+		User updatedUser = userService.updateOnboardingCompletion(1L, true);
+
+		assertTrue(updatedUser.isOnboardingCompleted());
 	}
 
 	/* can later re enable this 

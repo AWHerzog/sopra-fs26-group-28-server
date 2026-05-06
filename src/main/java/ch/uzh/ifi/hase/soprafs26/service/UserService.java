@@ -69,6 +69,7 @@ public class UserService {
 		newUser.setStatus(UserStatus.ONLINE);
 		newUser.setCreationDate(LocalDateTime.now());
 		newUser.setPoints(0);
+		newUser.setOnboardingCompleted(false);
 
 		//hashing
 		String hashedPassword = passwordEncoder.encode(newUser.getPassword());
@@ -89,6 +90,12 @@ public class UserService {
 		User user = userRepository.findByUsername(loginUser.getUsername()); //get User
 		user.setToken(UUID.randomUUID().toString());
 		user.setStatus(UserStatus.ONLINE);
+		return user;
+	}
+
+	public User updateOnboardingCompletion(Long userId, boolean onboardingCompleted) {
+		User user = getUserById(userId);
+		user.setOnboardingCompleted(onboardingCompleted);
 		return user;
 	}
 
