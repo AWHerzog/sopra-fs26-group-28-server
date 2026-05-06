@@ -350,6 +350,11 @@ public class GameFlowService {
     public void leaveGame(String gameCode, String username) {
         Game game = getGameByCode(gameCode);
 
+        //check if player should be in lobby 
+        if (!game.getPlayers().containsKey(username)){
+             return;
+        }
+
         // Last player: delete the game regardless of status
         if (game.getPlayers().size() <= 1) {
             gameRepository.delete(game);
