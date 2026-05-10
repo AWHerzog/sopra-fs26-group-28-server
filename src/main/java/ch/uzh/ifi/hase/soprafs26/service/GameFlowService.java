@@ -50,11 +50,12 @@ public class GameFlowService {
     private final SimpMessagingTemplate messagingTemplate;
 
     private final QuestionService questionService;
+    private final TranslationService translationService;
 
     public GameFlowService(GameRepository gameRepository, RoundRepository roundRepository,
                         AnswerRepository answerRepository, VoteRepository voteRepository,
                         UserRepository userRepository, SimpMessagingTemplate messagingTemplate,
-                        QuestionService questionService) {
+                        QuestionService questionService, TranslationService translationService) {
         this.gameRepository = gameRepository;
         this.roundRepository = roundRepository;
         this.answerRepository = answerRepository;
@@ -62,6 +63,7 @@ public class GameFlowService {
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
         this.questionService = questionService;
+        this.translationService = translationService;
     }
 
     // Host starts the game, setting state and deadline
@@ -345,6 +347,14 @@ public class GameFlowService {
 
         sendGameUpdate(game);
         return buildGameState(game, null);
+    }
+
+    public String translateCurrentQuestion(String gameCode, String targetLang) {
+        Game game = getGameByCode(gameCode);
+        Round round = getCurrentRound(game);
+        Map<String, Object> question = questionService.getQuestionById(round.getQuestionId());
+        String text = question.get("question").toString();
+        return translationService.translate(text, targetLang);
     }
 
     public void leaveGame(String gameCode, String username) {

@@ -103,6 +103,14 @@ public class GameController {
 		return gameFlowService.advanceStage(code);
 	}
 
+	@GetMapping("/games/{code}/question/translate")
+	@ResponseStatus(HttpStatus.OK)
+	public Map<String, String> translateQuestion(@PathVariable String code, @RequestParam String lang, @RequestHeader("Authorization") String token) {
+		userService.checkTokenAuthenticity(token);
+		String translated = gameFlowService.translateCurrentQuestion(code, lang);
+		return Map.of("translatedText", translated);
+	}
+
 	@GetMapping("/games/{code}/state")
 	@ResponseStatus(HttpStatus.OK)
 	public GameStateGetDTO getCurrentGameState(@PathVariable String code, @RequestHeader("Authorization") String token){
