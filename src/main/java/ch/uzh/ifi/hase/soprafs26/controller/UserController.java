@@ -2,14 +2,19 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import ch.uzh.ifi.hase.soprafs26.entity.Friend;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.LeaderboardEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserOnboardingPutDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs26.service.FriendService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
+
+import ch.uzh.ifi.hase.soprafs26.rest.dto.FriendsDataGetDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +31,11 @@ import java.util.Map;
 public class UserController {
 
 	private final UserService userService;
+	private final FriendService friendService;
 
-	UserController(UserService userService) {
+	UserController(UserService userService, FriendService friendService) {
 		this.userService = userService;
+		this.friendService = friendService;
 	}
 
 	@GetMapping("/users")
@@ -113,5 +120,53 @@ public class UserController {
 	@GetMapping("/_ah/health")
 	@ResponseStatus(HttpStatus.OK)
 	public void healthCheck() {}
+
+
+	@GetMapping("users/friends")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public FriendsDataGetDTO getFriendsData(@RequestHeader("Authorization") String token){
+		User user = userService.checkTokenAuthenticity(token);
+		return friendService.getFriendsData(user);
+	}
+
+	@PostMapping("/users/friends/requests/{requestId}/decline")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public void declineFriend(@RequestHeader("Authorization") String token, @PathVariable Long requestId){
+		User user = userService.checkTokenAuthenticity(token);
+		friendService.declineFriend(requestId);
+	}
+
+	@PostMapping("/users/friends/requests/{requestId}/accept")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public void acceptFriend(@RequestHeader("Authorization") String token, @PathVariable Long requestId){
+		userService.checkTokenAuthenticity(token);
+		friendService.acceptFriend(requestId);
+	}
+
+	//delete
+	@DeleteMapping("/users/friends/{friendId}") //im assuming friendId is the id of the friend entity
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public void removeFriend(@RequestHeader("Authorization") String token, @PathVariable Long friendId){
+		userService.checkTokenAuthenticity(token);
+		friendService.removeFriend(friendId);
+	}
+
+
+	//send friend request
+	@PostMapping("/users/friends/requests")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public void sendFriendRequest(@RequestBody Map<String, String> body, @RequestHeader("Authorization") String token){	//assume sends username of user wanting to be added in body (can be changed)
+		String rawUsername = body.get("username");
+		if (rawUsername == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing game username");
+		String username = rawUsername.trim();
+		
+		User user = userService.checkTokenAuthenticity(token);
+		friendService.sendFriendRequest(user, username);
+	}
 
 }
