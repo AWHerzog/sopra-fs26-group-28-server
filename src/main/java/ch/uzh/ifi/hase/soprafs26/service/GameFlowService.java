@@ -234,9 +234,10 @@ public class GameFlowService {
     public GameStateGetDTO advanceStage(String gameCode) {
         Game game = getGameByCodeForUpdate(gameCode);
 
-        // Guard: only advance if the deadline has actually expired (prevents double-advance from race conditions)
-        if (game.getStageDeadline() != null && game.getStageDeadline().isAfter(LocalDateTime.now())) {
-            return buildGameState(game, null);
+        if (game.getStatus() != GameStatus.ROUND_RESULT) {
+            if (game.getStageDeadline() != null && game.getStageDeadline().isAfter(LocalDateTime.now())) {
+                return buildGameState(game, null);
+            }
         }
 
         switch (game.getStatus()) {
