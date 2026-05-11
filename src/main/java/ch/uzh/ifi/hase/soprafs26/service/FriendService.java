@@ -63,7 +63,7 @@ public class FriendService {
 		Friend friend = new Friend();
 		friend.setSenderUsername(friendRequest.getSenderUsername());
 		friend.setReceiverUsername(receiver.getUsername());
-		friend.setStatus("1"); //temp value
+		friend.setStatus(receiver.getStatus().toString());
 
 		//here could check if friendship already exists but better do this for sending requests 
 
@@ -100,6 +100,7 @@ public class FriendService {
 		friendRequest.setReceiverId(receiver.getId());
 		friendRequest.setCreatedAt(LocalDateTime.now());
 		friendRequest.setStatus(FriendRequestStatus.PENDING);
+		friendRequestRepository.save(friendRequest);
 	}
 
 
