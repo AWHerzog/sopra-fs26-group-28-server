@@ -173,6 +173,67 @@ public class UserControllerTest {
 		verify(userService).updateOnboardingCompletion(Mockito.anyLong(), Mockito.anyBoolean());
 	}
 
+
+	@Test
+	public void loginUser_invalidCredentials_returns400() throws Exception {
+		// given
+		UserPostDTO userPostDTO = new UserPostDTO();
+		userPostDTO.setUsername("testUsername");
+		userPostDTO.setPassword("wrong-password");
+
+		given(userService.loginUser(Mockito.any()))
+				.willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username or Password is wrong"));
+
+		// when
+		MockHttpServletRequestBuilder postRequest = post("/users/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(asJsonString(userPostDTO));
+
+		// then
+		mockMvc.perform(postRequest)
+				.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	public void givenUnknownUser_whenGetUserById_thenReturn404() throws Exception {
+		// given
+		given(userService.getUserById(Mockito.anyLong()))
+				.willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+		// when/then
+		mockMvc.perform(get("/users/99").contentType(MediaType.APPLICATION_JSON))
+				.andExpect(status().isNotFound());
+	}
+
+	@Test
+	public void logout_validToken_returns200() throws Exception {
+		// given
+		User user = new User();
+		user.setUsername("testUsername");
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(user);
+
+		// when
+		MockHttpServletRequestBuilder postRequest = post("/users/logout")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token");
+
+		// then
+		mockMvc.perform(postRequest)
+				.andExpect(status().isOk());
+		verify(userService).logoutUser("valid-token");
+	}
+
+	@Test
+	public void healthCheck_returns200() throws Exception {
+		// when
+		MockHttpServletRequestBuilder getRequest = get("/_ah/health")
+				.contentType(MediaType.APPLICATION_JSON);
+
+		// then
+		mockMvc.perform(getRequest)
+				.andExpect(status().isOk());
+	}
+
 	/**
 	 * Helper Method to convert userPostDTO into a JSON string such that the input
 	 * can be processed
