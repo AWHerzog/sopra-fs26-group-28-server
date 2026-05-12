@@ -93,6 +93,20 @@ public class UserService {
 		return user;
 	}
 
+	public User updateUser(Long userId, String newUsername) {
+		User user = getUserById(userId);
+		if (newUsername == null || newUsername.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username cannot be empty");
+		}
+		if (!newUsername.equals(user.getUsername())) {
+			if (userRepository.findByUsername(newUsername) != null) {
+				throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already taken");
+			}
+			user.setUsername(newUsername);
+		}
+		return user;
+	}
+
 	public User updateOnboardingCompletion(Long userId, boolean onboardingCompleted) {
 		User user = getUserById(userId);
 		user.setOnboardingCompleted(onboardingCompleted);
