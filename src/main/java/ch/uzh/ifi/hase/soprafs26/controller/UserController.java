@@ -10,6 +10,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.LeaderboardEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserOnboardingPutDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPutDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.FriendService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
@@ -72,6 +73,21 @@ public class UserController {
 	public UserGetDTO getUserById(@PathVariable Long userId) {
 		User user = userService.getUserById(userId);
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(user);
+	}
+
+	@PutMapping("/users/{userId}")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public UserGetDTO updateUser(
+			@PathVariable Long userId,
+			@RequestBody UserPutDTO userPutDTO,
+			@RequestHeader("Authorization") String token) {
+		User requester = userService.checkTokenAuthenticity(token);
+		if (!requester.getId().equals(userId)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only edit your own profile");
+		}
+		User updatedUser = userService.updateUser(userId, userPutDTO.getUsername());
+		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(updatedUser);
 	}
 
 	@PutMapping("/users/{userId}/onboarding")
