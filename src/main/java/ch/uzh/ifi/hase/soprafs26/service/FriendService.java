@@ -51,15 +51,23 @@ public class FriendService {
 
 	public void declineFriend(Long id){
 		FriendRequest friendRequest = friendRequestRepository.findFriendRequestById(id);
+		if (friendRequest.getStatus() != FriendRequestStatus.PENDING){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "You already declined this request");
+		}
 		friendRequest.setStatus(FriendRequestStatus.DECLINED); //still keep request, can change later
 	}
 
 	public void acceptFriend(Long id){
 		FriendRequest friendRequest = friendRequestRepository.findFriendRequestById(id);
+
+		if (friendRequest.getStatus() != FriendRequestStatus.PENDING){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "You already accepted this request");
+		}
+
 		friendRequest.setStatus(FriendRequestStatus.ACCEPTED); 
 
 		User receiver = userRepository.findById(friendRequest.getReceiverId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-		
+
 		Friend friend = new Friend();
 		friend.setSenderUsername(friendRequest.getSenderUsername());
 		friend.setReceiverUsername(receiver.getUsername());
@@ -93,6 +101,16 @@ public class FriendService {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot add yourself as friend");
 		}
 
+		//check if a request was already sent 
+		if (friendRequestRepository.findBySenderIdAndReceiverId(sender.getId(), receiver.getId()) != null){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already sent a request to this user");
+		}
+
+		//check if users are already friends
+		if (friendRepository.findBySenderUsernameAndReceiverUsername(sender.getUsername(), receiver.getUsername()) != null){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "You already have this user as a friend");
+		}
+
 		//send request
 		FriendRequest friendRequest = new FriendRequest();
 		friendRequest.setSenderId(sender.getId());
@@ -102,7 +120,6 @@ public class FriendService {
 		friendRequest.setStatus(FriendRequestStatus.PENDING);
 		friendRequestRepository.save(friendRequest);
 	}
-
 
 
 	//helper to always have sender as user wanting the friends list and receiver being his friends

@@ -11,4 +11,5 @@ import java.util.List;
 public interface FriendRepository extends JpaRepository<Friend, Long> {
 	List<Friend> findBySenderUsernameOrReceiverUsername(String senderUsername, String receiverUsername);
 	Friend findFriendById(Long id);
+	Friend findBySenderUsernameAndReceiverUsername(String senderUsername, String receiverUsername);
 }
