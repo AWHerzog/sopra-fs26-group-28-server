@@ -9,13 +9,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.rest.dto.FriendsDataGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDataGetDTO;
 import ch.uzh.ifi.hase.soprafs26.constant.FriendRequestStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.InviteStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Friend;
 import ch.uzh.ifi.hase.soprafs26.entity.FriendRequest;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.entity.Invite;
 import ch.uzh.ifi.hase.soprafs26.repository.FriendRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.FriendRequestRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.InviteRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -33,11 +37,14 @@ public class FriendService {
 
 	private final UserRepository userRepository;
 
-	public FriendService(@Qualifier("friendRepository") FriendRepository friendRepository, @Qualifier("friendRequestRepository") FriendRequestRepository friendRequestRepository, @Qualifier("userRepository") UserRepository userRepository) {
+	private final InviteRepository inviteRepository;
+
+	public FriendService(@Qualifier("inviteRepository") InviteRepository inviteRepository, @Qualifier("friendRepository") FriendRepository friendRepository, @Qualifier("friendRequestRepository") FriendRequestRepository friendRequestRepository, @Qualifier("userRepository") UserRepository userRepository) {
 		this.friendRepository = friendRepository;
 		this.friendRequestRepository = friendRequestRepository;
 		this.userRepository = userRepository;
-	}
+		this.inviteRepository = inviteRepository;
+		}
 
 	public FriendsDataGetDTO getFriendsData(User user){
 		FriendsDataGetDTO friendsDataGetDTO = new FriendsDataGetDTO();
@@ -120,6 +127,60 @@ public class FriendService {
 		friendRequest.setStatus(FriendRequestStatus.PENDING);
 		friendRequestRepository.save(friendRequest);
 	}
+
+	public void inviteFriend(User sender, String receiverUsername, String gameCode){
+		User receiver = userRepository.findByUsername(receiverUsername);
+
+		if (sender == receiver){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot invite yourself");
+		}
+
+		if (inviteRepository.findBySenderUsernameAndReceiverUsername(sender.getUsername(), receiver.getUsername()) != null){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already sent a request to this user");
+		}
+
+		Invite invite = new Invite();
+		invite.setSenderUsername(sender.getUsername());
+		invite.setReceiverUsername(receiver.getUsername());
+		invite.setStatus(InviteStatus.PENDING); 
+		invite.setGameCode(gameCode);
+		inviteRepository.save(invite);
+	}
+
+	public String acceptInvite(Long id){
+		Invite invite = inviteRepository.findInviteById(id);
+		
+		if (invite.getStatus() != InviteStatus.PENDING){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "You already accepted this invite");
+		}
+
+		invite.setStatus(InviteStatus.ACCEPTED);
+		return invite.getGameCode();
+	}
+
+	public void declineInvite(Long id){
+		Invite invite = inviteRepository.findInviteById(id);
+		
+		if (invite.getStatus() != InviteStatus.PENDING){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "You already declined this invite");
+		}
+
+		invite.setStatus(InviteStatus.DECLINED);
+
+		//delete invite 
+		inviteRepository.delete(invite);
+		inviteRepository.flush();
+	}
+
+	public InviteDataGetDTO getInvites(User receiver){
+		InviteDataGetDTO inviteDataGetDTO = new InviteDataGetDTO();
+		List<Invite> invites = inviteRepository.findByReceiverUsername(receiver.getUsername());
+
+		inviteDataGetDTO.setInvites(invites);
+		return inviteDataGetDTO;
+	}
+
+
 
 
 	//helper to always have sender as user wanting the friends list and receiver being his friends

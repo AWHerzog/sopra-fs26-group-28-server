@@ -16,6 +16,7 @@ import ch.uzh.ifi.hase.soprafs26.service.FriendService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
 import ch.uzh.ifi.hase.soprafs26.rest.dto.FriendsDataGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDataGetDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -185,4 +186,51 @@ public class UserController {
 		friendService.sendFriendRequest(user, username);
 	}
 
+
+	//Invite friends
+	@PostMapping("/friends/invite")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public void invite(@RequestBody Map<String, String> body, @RequestHeader("Authorization") String token){
+		User sender = userService.checkTokenAuthenticity(token);
+		
+		String rawUsername = body.get("username");
+		if (rawUsername == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing receiver username");
+		String receiverUsername = rawUsername.trim();
+
+		String rawGameCode = body.get("gameCode");
+		if (rawGameCode == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing game code");
+		String gameCode = rawUsername.trim();
+
+		friendService.inviteFriend(sender, receiverUsername, gameCode);
+	}
+
+	//get invites
+	@PostMapping("/friends/invite/get")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public InviteDataGetDTO inviteGet(@RequestHeader("Authorization") String token){
+		User receiver = userService.checkTokenAuthenticity(token);
+		InviteDataGetDTO inviteDataGetDTO = friendService.getInvites(receiver);
+		return inviteDataGetDTO;
+	}
+
+	@PostMapping("/friends/invite/accept")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public String inviteAccept(@RequestBody Map<String, Long> body, @RequestHeader("Authorization") String token){
+		userService.checkTokenAuthenticity(token);
+		Long id = body.get("inviteId");
+		String gameCode = friendService.acceptInvite(id);
+		return gameCode;
+	}
+
+	@DeleteMapping("/friends/invite/decline")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	public void inviteDecline(@RequestBody Map<String, Long> body, @RequestHeader("Authorization") String token){
+		userService.checkTokenAuthenticity(token);
+		Long id = body.get("inviteId");
+		friendService.declineInvite(id);
+	}
 }
