@@ -61,6 +61,7 @@ public class GameStateGetDTO {
     private QuestionDTO question;
     private List<AnswerDTO> answers = new ArrayList<>();
     private List<String> submittedUsernames = new ArrayList<>();
+    private int readyCount;
 
     public Long getId() {
         return id;
@@ -174,4 +175,7 @@ public class GameStateGetDTO {
 
     public List<String> getSubmittedUsernames() { return submittedUsernames; }
     public void setSubmittedUsernames(List<String> submittedUsernames) { this.submittedUsernames = submittedUsernames; }
+
+    public int getReadyCount() { return readyCount; }
+    public void setReadyCount(int readyCount) { this.readyCount = readyCount; }
 }

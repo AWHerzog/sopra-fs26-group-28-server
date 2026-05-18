@@ -219,7 +219,8 @@ public class GameFlowService {
             currentRound.setCompletedAt(LocalDateTime.now());
             roundRepository.save(currentRound);
             game.setStatus(GameStatus.ROUND_RESULT);
-            game.setStageDeadline(LocalDateTime.now().plusSeconds(15));
+            game.setStageDeadline(LocalDateTime.now().plusSeconds(30));
+            game.getReadyPlayers().clear();
             game = gameRepository.save(game);
             gameRepository.flush();
         }
@@ -231,11 +232,39 @@ public class GameFlowService {
         return state;
     }
 
-    public GameStateGetDTO advanceStage(String gameCode) {
+    public GameStateGetDTO markPlayerReady(String gameCode, User user) {
         Game game = getGameByCodeForUpdate(gameCode);
 
         if (game.getStatus() != GameStatus.ROUND_RESULT) {
-            if (game.getStageDeadline() != null && game.getStageDeadline().isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not in ROUND_RESULT stage");
+        }
+
+        if (!game.getPlayers().containsKey(user.getUsername())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of the game");
+        }
+
+        game.getReadyPlayers().add(user.getUsername());
+        game = gameRepository.save(game);
+        gameRepository.flush();
+
+        if (game.getReadyPlayers().size() >= game.getPlayers().size()) {
+            return advanceStage(gameCode);
+        }
+
+        sendGameUpdate(game);
+        return buildGameState(game, user);
+    }
+
+    public GameStateGetDTO advanceStage(String gameCode) {
+        Game game = getGameByCodeForUpdate(gameCode);
+
+        boolean deadlineActive = game.getStageDeadline() != null && game.getStageDeadline().isAfter(LocalDateTime.now());
+        if (deadlineActive) {
+            if (game.getStatus() != GameStatus.ROUND_RESULT) {
+                return buildGameState(game, null);
+            }
+            boolean allReady = game.getReadyPlayers().size() >= game.getPlayers().size();
+            if (!allReady) {
                 return buildGameState(game, null);
             }
         }
@@ -254,7 +283,8 @@ public class GameFlowService {
                 round.setCompletedAt(LocalDateTime.now());
                 roundRepository.save(round);
                 game.setStatus(GameStatus.ROUND_RESULT);
-                game.setStageDeadline(LocalDateTime.now().plusSeconds(15));
+                game.setStageDeadline(LocalDateTime.now().plusSeconds(30));
+                game.getReadyPlayers().clear();
                 break;
 
             case ROUND_RESULT:
@@ -266,6 +296,7 @@ public class GameFlowService {
                 game.setCurrentRound(nextRound);
                 game.setStatus(GameStatus.ANSWERING);
                 game.setStageDeadline(LocalDateTime.now().plusSeconds(30));
+                game.getReadyPlayers().clear();
 
                 Round newRound = new Round();
                 newRound.setGameId(game.getId());
@@ -460,6 +491,7 @@ public class GameFlowService {
     // Converts Game to GameStateGetDTO and populates question, answers, and user-specific flags.
     private GameStateGetDTO buildGameState(Game game, User user) {
         GameStateGetDTO state = DTOMapper.INSTANCE.convertEntityToGameStateGetDTO(game);
+        state.setReadyCount(game.getReadyPlayers().size());
 
         if (game.getCurrentRound() != null && game.getCurrentRound() > 0) {
             Optional<Round> roundOpt = roundRepository.findByGameIdAndRoundNumber(game.getId(), game.getCurrentRound());
