@@ -200,7 +200,7 @@ public class UserController {
 
 		String rawGameCode = body.get("gameCode");
 		if (rawGameCode == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing game code");
-		String gameCode = rawUsername.trim();
+		String gameCode = rawGameCode.trim();
 
 		friendService.inviteFriend(sender, receiverUsername, gameCode);
 	}
