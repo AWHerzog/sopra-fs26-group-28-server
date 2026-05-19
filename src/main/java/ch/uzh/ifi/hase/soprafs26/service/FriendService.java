@@ -113,8 +113,9 @@ public class FriendService {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already sent a request to this user");
 		}
 
-		//check if users are already friends
-		if (friendRepository.findBySenderUsernameAndReceiverUsername(sender.getUsername(), receiver.getUsername()) != null){
+		//check if users are already friends (both directions)
+		if (friendRepository.findBySenderUsernameAndReceiverUsername(sender.getUsername(), receiver.getUsername()) != null
+				|| friendRepository.findBySenderUsernameAndReceiverUsername(receiver.getUsername(), sender.getUsername()) != null){
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "You already have this user as a friend");
 		}
 

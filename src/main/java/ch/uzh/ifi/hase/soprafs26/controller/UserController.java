@@ -218,11 +218,11 @@ public class UserController {
 	@PostMapping("/friends/invite/accept")
 	@ResponseStatus(HttpStatus.OK)
 	@ResponseBody
-	public String inviteAccept(@RequestBody Map<String, Long> body, @RequestHeader("Authorization") String token){
+	public Map<String, String> inviteAccept(@RequestBody Map<String, Long> body, @RequestHeader("Authorization") String token){
 		userService.checkTokenAuthenticity(token);
 		Long id = body.get("inviteId");
 		String gameCode = friendService.acceptInvite(id);
-		return gameCode;
+		return Map.of("gameCode", gameCode);
 	}
 
 	@DeleteMapping("/friends/invite/decline")
