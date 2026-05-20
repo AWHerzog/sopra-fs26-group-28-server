@@ -182,6 +182,24 @@ public class GameControllerTest {
     }
 
     @Test
+    public void dirtyLeave_validToken_returnsOk() throws Exception {
+        // given
+        User user = new User();
+        user.setUsername("hostUser");
+        given(userService.checkTokenAuthenticity(Mockito.any())).willReturn(user);
+
+        // when
+        MockHttpServletRequestBuilder postRequest = post("/games/abc123/leave/dirty")
+            .contentType(MediaType.APPLICATION_JSON)
+            .param("token", "valid-token");
+
+        // then
+        mockMvc.perform(postRequest)
+            .andExpect(status().isOk());
+        then(gameFlowService).should().leaveGame("abc123", "hostUser");
+    }
+
+    @Test
     public void startGame_validInput_returnsState() throws Exception {
         // given
         User user = new User();
@@ -226,6 +244,27 @@ public class GameControllerTest {
         // then
         mockMvc.perform(postRequest)
             .andExpect(status().isForbidden());
+    }
+
+    @Test
+    public void ready_validToken_returnsState() throws Exception {
+        // given
+        User user = new User();
+        user.setUsername("player1");
+        GameStateGetDTO state = createState("abc123", GameStatus.ROUND_RESULT);
+
+        given(userService.checkTokenAuthenticity(Mockito.any())).willReturn(user);
+        given(gameFlowService.markPlayerReady(Mockito.eq("abc123"), Mockito.eq(user))).willReturn(state);
+
+        // when
+        MockHttpServletRequestBuilder postRequest = post("/games/abc123/ready")
+            .contentType(MediaType.APPLICATION_JSON)
+            .header("Authorization", "valid-token");
+
+        // then
+        mockMvc.perform(postRequest)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status", is("ROUND_RESULT")));
     }
 
     @Test
@@ -300,6 +339,27 @@ public class GameControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.code", is("abc123")))
             .andExpect(jsonPath("$.status", is("ROUND_RESULT")));
+    }
+
+    @Test
+    public void translateQuestion_validToken_returnsTranslation() throws Exception {
+        // given
+        User user = new User();
+        user.setUsername("player1");
+
+        given(userService.checkTokenAuthenticity(Mockito.any())).willReturn(user);
+        given(gameFlowService.translateCurrentQuestion("abc123", "de")).willReturn("Frage auf Deutsch");
+
+        // when
+        MockHttpServletRequestBuilder getRequest = get("/games/abc123/question/translate")
+            .contentType(MediaType.APPLICATION_JSON)
+            .param("lang", "de")
+            .header("Authorization", "valid-token");
+
+        // then
+        mockMvc.perform(getRequest)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.translatedText", is("Frage auf Deutsch")));
     }
 
     @Test

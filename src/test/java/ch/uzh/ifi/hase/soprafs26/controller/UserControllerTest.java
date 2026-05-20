@@ -6,8 +6,12 @@ import tools.jackson.databind.ObjectMapper;
 
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.FriendsDataGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDataGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.LeaderboardEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserOnboardingPutDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPutDTO;
 import ch.uzh.ifi.hase.soprafs26.service.FriendService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
@@ -24,12 +28,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -171,6 +177,201 @@ public class UserControllerTest {
 				.andExpect(jsonPath("$.onboardingCompleted", is(true)));
 
 		verify(userService).updateOnboardingCompletion(Mockito.anyLong(), Mockito.anyBoolean());
+	}
+
+	@Test
+	public void updateUser_validToken_userUpdated() throws Exception {
+		User requester = new User();
+		requester.setId(1L);
+		requester.setUsername("testUsername");
+
+		User updated = new User();
+		updated.setId(1L);
+		updated.setUsername("updatedUsername");
+		updated.setStatus(UserStatus.ONLINE);
+
+		UserPutDTO userPutDTO = new UserPutDTO();
+		userPutDTO.setUsername("updatedUsername");
+
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(requester);
+		given(userService.updateUser(Mockito.anyLong(), Mockito.anyString())).willReturn(updated);
+
+		MockHttpServletRequestBuilder putRequest = put("/users/1")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token")
+				.content(asJsonString(userPutDTO));
+
+		mockMvc.perform(putRequest)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.username", is("updatedUsername")));
+
+		verify(userService).updateUser(1L, "updatedUsername");
+	}
+
+	@Test
+	public void getLeaderboard_validToken_returnsLeaderboard() throws Exception {
+		LeaderboardEntryDTO entry = new LeaderboardEntryDTO();
+		entry.setRank(1);
+		entry.setUsername("player1");
+		entry.setPoints(42);
+
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(new User());
+		given(userService.getLeaderboard()).willReturn(Collections.singletonList(entry));
+
+		MockHttpServletRequestBuilder getRequest = get("/leaderboard")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token");
+
+		mockMvc.perform(getRequest)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].rank", is(1)))
+				.andExpect(jsonPath("$[0].username", is("player1")))
+				.andExpect(jsonPath("$[0].points", is(42)));
+	}
+
+	@Test
+	public void getFriendsData_validToken_returnsFriendsData() throws Exception {
+		User user = new User();
+		user.setId(1L);
+		user.setUsername("testUsername");
+
+		FriendsDataGetDTO dto = new FriendsDataGetDTO();
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(user);
+		given(friendService.getFriendsData(user)).willReturn(dto);
+
+		MockHttpServletRequestBuilder getRequest = get("/users/friends")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token");
+
+		mockMvc.perform(getRequest)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.friends").isArray())
+				.andExpect(jsonPath("$.incomingRequests").isArray())
+				.andExpect(jsonPath("$.outgoingRequests").isArray());
+	}
+
+	@Test
+	public void declineFriend_validToken_callsService() throws Exception {
+		User user = new User();
+		user.setUsername("testUsername");
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(user);
+
+		MockHttpServletRequestBuilder postRequest = post("/users/friends/requests/7/decline")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token");
+
+		mockMvc.perform(postRequest)
+				.andExpect(status().isOk());
+		verify(friendService).declineFriend(7L);
+	}
+
+	@Test
+	public void acceptFriend_validToken_callsService() throws Exception {
+		User user = new User();
+		user.setUsername("testUsername");
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(user);
+
+		MockHttpServletRequestBuilder postRequest = post("/users/friends/requests/8/accept")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token");
+
+		mockMvc.perform(postRequest)
+				.andExpect(status().isOk());
+		verify(friendService).acceptFriend(8L);
+	}
+
+	@Test
+	public void removeFriend_validToken_callsService() throws Exception {
+		User user = new User();
+		user.setUsername("testUsername");
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(user);
+
+		MockHttpServletRequestBuilder deleteRequest = delete("/users/friends/9")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token");
+
+		mockMvc.perform(deleteRequest)
+				.andExpect(status().isOk());
+		verify(friendService).removeFriend(9L);
+	}
+
+	@Test
+	public void sendFriendRequest_validToken_trimsUsername() throws Exception {
+		User user = new User();
+		user.setUsername("testUsername");
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(user);
+
+		MockHttpServletRequestBuilder postRequest = post("/users/friends/requests")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token")
+				.content("{\"username\":\" receiver \"}");
+
+		mockMvc.perform(postRequest)
+				.andExpect(status().isOk());
+		verify(friendService).sendFriendRequest(user, "receiver");
+	}
+
+	@Test
+	public void invite_validToken_trimsBodyValues() throws Exception {
+		User user = new User();
+		user.setUsername("testUsername");
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(user);
+
+		MockHttpServletRequestBuilder postRequest = post("/friends/invite")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token")
+				.content("{\"username\":\" receiver \" , \"gameCode\":\" abc123 \"}");
+
+		mockMvc.perform(postRequest)
+				.andExpect(status().isOk());
+		verify(friendService).inviteFriend(user, "receiver", "abc123");
+	}
+
+	@Test
+	public void inviteGet_validToken_returnsInvites() throws Exception {
+		User user = new User();
+		user.setUsername("testUsername");
+
+		InviteDataGetDTO dto = new InviteDataGetDTO();
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(user);
+		given(friendService.getInvites(user)).willReturn(dto);
+
+		MockHttpServletRequestBuilder postRequest = post("/friends/invite/get")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token");
+
+		mockMvc.perform(postRequest)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.invites").isArray());
+	}
+
+	@Test
+	public void inviteAccept_validToken_returnsGameCode() throws Exception {
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(new User());
+		given(friendService.acceptInvite(11L)).willReturn("abc123");
+
+		MockHttpServletRequestBuilder postRequest = post("/friends/invite/accept")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token")
+				.content(asJsonString(Map.of("inviteId", 11L)));
+
+		mockMvc.perform(postRequest)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.gameCode", is("abc123")));
+	}
+
+	@Test
+	public void inviteDecline_validToken_callsService() throws Exception {
+		given(userService.checkTokenAuthenticity("valid-token")).willReturn(new User());
+
+		MockHttpServletRequestBuilder deleteRequest = delete("/friends/invite/decline")
+				.contentType(MediaType.APPLICATION_JSON)
+				.header("Authorization", "valid-token")
+				.content(asJsonString(Map.of("inviteId", 12L)));
+
+		mockMvc.perform(deleteRequest)
+				.andExpect(status().isOk());
+		verify(friendService).declineInvite(12L);
 	}
 
 
