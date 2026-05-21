@@ -164,7 +164,7 @@ public class FriendService {
 
 	private boolean isUserInAnyGame(String username) {
 		return gameRepository.findAll().stream()
-			.anyMatch(game -> game.getPlayers() != null && game.getPlayers().containsKey(username) && game.getStatus() != GameStatus.FINISHED);
+			.anyMatch(game -> game.getPlayers() != null && game.getPlayers().containsKey(username) && game.getStatus() != null && game.getStatus() != GameStatus.FINISHED);
 	}
 
 	public String acceptInvite(Long id){
