@@ -48,7 +48,7 @@ Architecture diagram: [diagrams/01_ARCHITECTURE_OVERVIEW.md](diagrams/01_ARCHITE
 
 ## Launch and Deployment
 
-### Prerequisites
+###  Prerequisites
 
 - Java 17
 - No external database required for local development — H2 runs in memory by default.
