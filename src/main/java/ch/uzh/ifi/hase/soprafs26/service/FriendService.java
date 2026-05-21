@@ -12,6 +12,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.FriendsDataGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.InviteDataGetDTO;
 import ch.uzh.ifi.hase.soprafs26.constant.FriendRequestStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.InviteStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Friend;
 import ch.uzh.ifi.hase.soprafs26.entity.FriendRequest;
 import ch.uzh.ifi.hase.soprafs26.entity.Game;
@@ -163,7 +164,7 @@ public class FriendService {
 
 	private boolean isUserInAnyGame(String username) {
 		return gameRepository.findAll().stream()
-			.anyMatch(game -> game.getPlayers() != null && game.getPlayers().containsKey(username));
+			.anyMatch(game -> game.getPlayers() != null && game.getPlayers().containsKey(username) && game.getStatus() != GameStatus.FINISHED);
 	}
 
 	public String acceptInvite(Long id){
