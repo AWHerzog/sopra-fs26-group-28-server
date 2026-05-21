@@ -13,5 +13,6 @@ public interface InviteRepository extends JpaRepository<Invite, Long> {
 	Invite findInviteById(Long id);
 	Invite findBySenderUsernameAndReceiverUsername(String senderUsername, String receiverUsername);
 	Invite findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus(String senderUsername, String receiverUsername, String gameCode, InviteStatus status);
+	List<Invite> findByGameCodeAndStatus(String gameCode, InviteStatus status);
 	List<Invite> findByReceiverUsername(String receiverUsername);
 }

@@ -40,4 +40,14 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
      * Count votes submitted for a round.
      */
     long countByRoundId(Long roundId);
+
+    /**
+     * Delete a specific user's vote for a round.
+     */
+    void deleteByRoundIdAndVoterId(Long roundId, Long voterId);
+
+    /**
+     * Delete all votes for a given answer.
+     */
+    void deleteByAnswerId(Long answerId);
 }

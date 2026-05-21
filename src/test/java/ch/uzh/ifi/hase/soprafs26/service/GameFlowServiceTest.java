@@ -1,13 +1,16 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Answer;
 import ch.uzh.ifi.hase.soprafs26.entity.Game;
+import ch.uzh.ifi.hase.soprafs26.entity.Invite;
 import ch.uzh.ifi.hase.soprafs26.entity.Round;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.entity.Vote;
 import ch.uzh.ifi.hase.soprafs26.repository.AnswerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.GameRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.InviteRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.RoundRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
@@ -32,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import ch.uzh.ifi.hase.soprafs26.constant.InviteStatus;
 
 public class GameFlowServiceTest {
 
@@ -39,6 +43,7 @@ public class GameFlowServiceTest {
     @Mock private RoundRepository roundRepository;
     @Mock private AnswerRepository answerRepository;
     @Mock private VoteRepository voteRepository;
+    @Mock private InviteRepository inviteRepository;
     @Mock private UserRepository userRepository;
     @Mock private SimpMessagingTemplate messagingTemplate;
     @Mock private QuestionService questionService;
@@ -102,12 +107,16 @@ public class GameFlowServiceTest {
         Mockito.when(answerRepository.existsByRoundIdAndUserId(Mockito.any(), Mockito.any())).thenReturn(false);
         Mockito.when(answerRepository.countByRoundId(Mockito.any())).thenReturn(1L);
         Mockito.when(answerRepository.findByRoundId(Mockito.any())).thenReturn(new ArrayList<>());
+        Mockito.when(answerRepository.findByRoundIdAndUserId(Mockito.any(), Mockito.any())).thenReturn(Optional.empty());
 
         Mockito.when(voteRepository.save(Mockito.any())).thenAnswer(inv -> inv.getArgument(0));
         Mockito.when(voteRepository.existsByRoundIdAndVoterId(Mockito.any(), Mockito.any())).thenReturn(false);
         Mockito.when(voteRepository.countByRoundId(Mockito.any())).thenReturn(1L);
         Mockito.when(voteRepository.findByRoundId(Mockito.any())).thenReturn(new ArrayList<>());
         Mockito.when(voteRepository.findByAnswerId(Mockito.any())).thenReturn(new ArrayList<>());
+
+        Mockito.when(inviteRepository.findByGameCodeAndStatus(Mockito.any(), Mockito.any()))
+            .thenReturn(new ArrayList<>());
 
         Mockito.when(userRepository.findByUsername("hostUser")).thenReturn(hostUser);
         Mockito.when(userRepository.findByUsername("player2")).thenReturn(player2);
@@ -447,11 +456,51 @@ public class GameFlowServiceTest {
     @Test
     public void leaveGame_nonHost_removesPlayer() {
         testGame.setStatus(GameStatus.WAITING);
+        player2.setStatus(UserStatus.OFFLINE);
 
         gameFlowService.leaveGame("abc123", "player2");
 
         assertFalse(testGame.getPlayers().containsKey("player2"));
         assertEquals("hostUser", testGame.getHostname());
+        assertEquals(UserStatus.ONLINE, player2.getStatus());
+    }
+
+    @Test
+    public void leaveGame_currentRoundDataIsCleared() {
+        testGame.setStatus(GameStatus.ANSWERING);
+        testGame.getReadyPlayers().add("player2");
+
+        Answer leavingAnswer = new Answer();
+        leavingAnswer.setId(555L);
+        leavingAnswer.setRoundId(100L);
+        leavingAnswer.setUserId(2L);
+        leavingAnswer.setContent("To be removed");
+        Mockito.when(answerRepository.findByRoundIdAndUserId(100L, 2L)).thenReturn(Optional.of(leavingAnswer));
+
+        gameFlowService.leaveGame("abc123", "player2");
+
+        assertFalse(testGame.getReadyPlayers().contains("player2"));
+        Mockito.verify(voteRepository).deleteByAnswerId(555L);
+        Mockito.verify(answerRepository).delete(leavingAnswer);
+        Mockito.verify(voteRepository).deleteByRoundIdAndVoterId(100L, 2L);
+    }
+
+    @Test
+    public void leaveGame_clearsPendingLobbyInvitesForLeavingPlayer() {
+        testGame.setStatus(GameStatus.WAITING);
+
+        Invite invite = new Invite();
+        invite.setSenderUsername("hostUser");
+        invite.setReceiverUsername("player2");
+        invite.setGameCode("abc123");
+        invite.setStatus(InviteStatus.PENDING);
+        Mockito.when(inviteRepository.findByGameCodeAndStatus("abc123", InviteStatus.PENDING))
+                .thenReturn(List.of(invite));
+
+        gameFlowService.leaveGame("abc123", "player2");
+
+        Mockito.verify(inviteRepository).delete(invite);
+        Mockito.verify(inviteRepository).flush();
     }
 
     @Test

@@ -4,13 +4,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.InviteStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Answer;
 import ch.uzh.ifi.hase.soprafs26.entity.Game;
+import ch.uzh.ifi.hase.soprafs26.entity.Invite;
 import ch.uzh.ifi.hase.soprafs26.entity.Round;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.entity.Vote;
 import ch.uzh.ifi.hase.soprafs26.repository.AnswerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.GameRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.InviteRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.RoundRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.VoteRepository;
@@ -46,6 +50,7 @@ public class GameFlowService {
     private final RoundRepository roundRepository;
     private final AnswerRepository answerRepository;
     private final VoteRepository voteRepository;
+    private final InviteRepository inviteRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -54,12 +59,14 @@ public class GameFlowService {
 
     public GameFlowService(GameRepository gameRepository, RoundRepository roundRepository,
                         AnswerRepository answerRepository, VoteRepository voteRepository,
+                        InviteRepository inviteRepository,
                         UserRepository userRepository, SimpMessagingTemplate messagingTemplate,
                         QuestionService questionService, TranslationService translationService) {
         this.gameRepository = gameRepository;
         this.roundRepository = roundRepository;
         this.answerRepository = answerRepository;
         this.voteRepository = voteRepository;
+        this.inviteRepository = inviteRepository;
         this.userRepository = userRepository;
         this.messagingTemplate = messagingTemplate;
         this.questionService = questionService;
@@ -395,11 +402,40 @@ public class GameFlowService {
 
     public void leaveGame(String gameCode, String username) {
         Game game = getGameByCode(gameCode);
+        User leavingUser = userRepository.findByUsername(username);
+
+        if (leavingUser != null) {
+            leavingUser.setStatus(UserStatus.ONLINE);
+            userRepository.save(leavingUser);
+            userRepository.flush();
+        }
 
         //check if player should be in lobby 
         if (!game.getPlayers().containsKey(username)){
              return;
         }
+
+        Round currentRound = roundRepository.findByGameIdAndRoundNumber(game.getId(), game.getCurrentRound())
+            .orElse(null);
+
+        if (currentRound != null && leavingUser != null) {
+            answerRepository.findByRoundIdAndUserId(currentRound.getId(), leavingUser.getId()).ifPresent(answer -> {
+                voteRepository.deleteByAnswerId(answer.getId());
+                answerRepository.delete(answer);
+            });
+            voteRepository.deleteByRoundIdAndVoterId(currentRound.getId(), leavingUser.getId());
+            answerRepository.flush();
+            voteRepository.flush();
+        }
+
+        for (Invite invite : inviteRepository.findByGameCodeAndStatus(gameCode, InviteStatus.PENDING)) {
+            if (username.equals(invite.getSenderUsername()) || username.equals(invite.getReceiverUsername())) {
+                inviteRepository.delete(invite);
+            }
+        }
+        inviteRepository.flush();
+
+        game.getReadyPlayers().remove(username);
 
         // Last player: delete the game regardless of status
         if (game.getPlayers().size() <= 1) {

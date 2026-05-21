@@ -34,4 +34,9 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
      * Count answers submitted for a round.
      */
     long countByRoundId(Long roundId);
+
+    /**
+     * Delete a specific user's answer for a round.
+     */
+    void deleteByRoundIdAndUserId(Long roundId, Long userId);
 }
