@@ -24,6 +24,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.ArgumentCaptor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
 import ch.uzh.ifi.hase.soprafs26.constant.InviteStatus;
 
 public class GameFlowServiceTest {
@@ -102,6 +104,8 @@ public class GameFlowServiceTest {
         Mockito.when(roundRepository.save(Mockito.any())).thenAnswer(inv -> inv.getArgument(0));
         Mockito.when(roundRepository.findByGameIdAndRoundNumber(Mockito.any(), Mockito.any()))
                 .thenReturn(Optional.of(testRound));
+        Mockito.when(roundRepository.findByGameIdOrderByRoundNumberAsc(Mockito.any()))
+            .thenReturn(List.of(testRound));
 
         Mockito.when(answerRepository.save(Mockito.any())).thenAnswer(inv -> inv.getArgument(0));
         Mockito.when(answerRepository.existsByRoundIdAndUserId(Mockito.any(), Mockito.any())).thenReturn(false);
@@ -463,6 +467,7 @@ public class GameFlowServiceTest {
         assertFalse(testGame.getPlayers().containsKey("player2"));
         assertEquals("hostUser", testGame.getHostname());
         assertEquals(UserStatus.ONLINE, player2.getStatus());
+        assertEquals(GameStatus.FINISHED, testGame.getStatus());
     }
 
     @Test
@@ -482,6 +487,31 @@ public class GameFlowServiceTest {
         assertFalse(testGame.getReadyPlayers().contains("player2"));
         Mockito.verify(voteRepository).deleteByAnswerId(555L);
         Mockito.verify(answerRepository).delete(leavingAnswer);
+        Mockito.verify(voteRepository).deleteByRoundIdAndVoterId(100L, 2L);
+    }
+
+    @Test
+    public void leaveGame_cleansAllRoundsForLeavingPlayer() {
+        Round previousRound = new Round();
+        previousRound.setId(99L);
+        previousRound.setGameId(10L);
+        previousRound.setRoundNumber(0);
+
+        Mockito.when(roundRepository.findByGameIdOrderByRoundNumberAsc(10L)).thenReturn(List.of(previousRound, testRound));
+
+        Answer previousRoundAnswer = new Answer();
+        previousRoundAnswer.setId(777L);
+        previousRoundAnswer.setRoundId(99L);
+        previousRoundAnswer.setUserId(2L);
+        previousRoundAnswer.setContent("previous round answer");
+        Mockito.when(answerRepository.findByRoundIdAndUserId(99L, 2L)).thenReturn(Optional.of(previousRoundAnswer));
+        Mockito.when(answerRepository.findByRoundIdAndUserId(100L, 2L)).thenReturn(Optional.of(new Answer()));
+
+        gameFlowService.leaveGame("abc123", "player2");
+
+        Mockito.verify(voteRepository).deleteByAnswerId(777L);
+        Mockito.verify(answerRepository).delete(previousRoundAnswer);
+        Mockito.verify(voteRepository).deleteByRoundIdAndVoterId(99L, 2L);
         Mockito.verify(voteRepository).deleteByRoundIdAndVoterId(100L, 2L);
     }
 
@@ -506,18 +536,22 @@ public class GameFlowServiceTest {
     @Test
     public void leaveGame_host_promotesNewHost() {
         testGame.setStatus(GameStatus.WAITING);
+        testGame.addPlayer("player3", 0);
 
         gameFlowService.leaveGame("abc123", "hostUser");
 
-        assertEquals("player2", testGame.getHostname());
+        assertNotEquals("hostUser", testGame.getHostname());
+        assertTrue(testGame.getPlayers().containsKey(testGame.getHostname()));
         assertFalse(testGame.getPlayers().containsKey("hostUser"));
+        assertEquals(2, testGame.getPlayers().size());
     }
 
     @Test
     public void leaveGame_duringAnswering_autoAdvancesToVotingIfAllAnswered() {
         testGame.setStatus(GameStatus.ANSWERING);
-        // player2 leaves; hostUser has already answered → answerCount(1) >= playerCount(1)
-        Mockito.when(answerRepository.countByRoundId(Mockito.any())).thenReturn(1L);
+        testGame.addPlayer("player3", 0);
+        // player2 leaves; hostUser and player3 have already answered → answerCount(2) >= playerCount(2)
+        Mockito.when(answerRepository.countByRoundId(Mockito.any())).thenReturn(2L);
 
         gameFlowService.leaveGame("abc123", "player2");
 
@@ -527,11 +561,41 @@ public class GameFlowServiceTest {
     @Test
     public void leaveGame_duringVoting_autoAdvancesToRoundResultIfAllVoted() {
         testGame.setStatus(GameStatus.VOTING);
-        // player2 leaves; hostUser has already voted → voteCount(1) >= playerCount(1)
-        Mockito.when(voteRepository.countByRoundId(Mockito.any())).thenReturn(1L);
+        testGame.addPlayer("player3", 0);
+        // player2 leaves; hostUser and player3 have already voted → voteCount(2) >= playerCount(2)
+        Mockito.when(voteRepository.countByRoundId(Mockito.any())).thenReturn(2L);
 
         gameFlowService.leaveGame("abc123", "player2");
 
         assertEquals(GameStatus.ROUND_RESULT, testGame.getStatus());
+    }
+
+    @Test
+    public void leaveGame_duringRoundResult_autoAdvancesToNextRoundIfAllReady() {
+        testGame.setStatus(GameStatus.ROUND_RESULT);
+        testGame.addPlayer("player3", 0);
+        testGame.getReadyPlayers().add("hostUser");
+        testGame.getReadyPlayers().add("player3");
+
+        gameFlowService.leaveGame("abc123", "player2");
+
+        assertEquals(GameStatus.ANSWERING, testGame.getStatus());
+        assertEquals(2, testGame.getCurrentRound());
+        assertTrue(testGame.getReadyPlayers().isEmpty());
+    }
+
+    @Test
+    public void leaveGame_whenOnePlayerRemains_finishesGameWithMessage() {
+        testGame.setStatus(GameStatus.ANSWERING);
+
+        gameFlowService.leaveGame("abc123", "player2");
+
+        assertEquals(GameStatus.FINISHED, testGame.getStatus());
+        assertEquals(1, testGame.getPlayers().size());
+        Mockito.verify(gameRepository, Mockito.never()).delete(Mockito.any());
+
+        ArgumentCaptor<GameStateGetDTO> stateCaptor = ArgumentCaptor.forClass(GameStateGetDTO.class);
+        Mockito.verify(messagingTemplate).convertAndSend(eq("/topic/game/abc123"), stateCaptor.capture());
+        assertEquals("You were the only player left. The game has ended.", stateCaptor.getValue().getEndMessage());
     }
 }

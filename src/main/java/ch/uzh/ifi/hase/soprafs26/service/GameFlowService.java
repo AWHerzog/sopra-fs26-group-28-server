@@ -368,10 +368,14 @@ public class GameFlowService {
 
     // Game ends after set number of rounds
     public GameStateGetDTO finishGame(String gameCode) {
+        return finishGame(gameCode, null);
+    }
+
+    public GameStateGetDTO finishGame(String gameCode, String endMessage) {
         Game game = getGameByCode(gameCode);
 
         if (game.getStatus() == GameStatus.FINISHED) {
-            return buildGameState(game, null);
+            return buildGameState(game, null, endMessage);
         }
 
         game.setStatus(GameStatus.FINISHED);
@@ -388,8 +392,8 @@ public class GameFlowService {
         }
         userRepository.flush();
 
-        sendGameUpdate(game);
-        return buildGameState(game, null);
+        sendGameUpdate(game, endMessage);
+        return buildGameState(game, null, endMessage);
     }
 
     public String translateCurrentQuestion(String gameCode, String targetLang) {
@@ -401,7 +405,7 @@ public class GameFlowService {
     }
 
     public void leaveGame(String gameCode, String username) {
-        Game game = getGameByCode(gameCode);
+        Game game = getGameByCodeForUpdate(gameCode);
         User leavingUser = userRepository.findByUsername(username);
 
         if (leavingUser != null) {
@@ -415,15 +419,14 @@ public class GameFlowService {
              return;
         }
 
-        Round currentRound = roundRepository.findByGameIdAndRoundNumber(game.getId(), game.getCurrentRound())
-            .orElse(null);
-
-        if (currentRound != null && leavingUser != null) {
-            answerRepository.findByRoundIdAndUserId(currentRound.getId(), leavingUser.getId()).ifPresent(answer -> {
-                voteRepository.deleteByAnswerId(answer.getId());
-                answerRepository.delete(answer);
-            });
-            voteRepository.deleteByRoundIdAndVoterId(currentRound.getId(), leavingUser.getId());
+        if (leavingUser != null) {
+            for (Round round : roundRepository.findByGameIdOrderByRoundNumberAsc(game.getId())) {
+                answerRepository.findByRoundIdAndUserId(round.getId(), leavingUser.getId()).ifPresent(answer -> {
+                    voteRepository.deleteByAnswerId(answer.getId());
+                    answerRepository.delete(answer);
+                });
+                voteRepository.deleteByRoundIdAndVoterId(round.getId(), leavingUser.getId());
+            }
             answerRepository.flush();
             voteRepository.flush();
         }
@@ -436,12 +439,52 @@ public class GameFlowService {
         inviteRepository.flush();
 
         game.getReadyPlayers().remove(username);
+        game.removePlayer(username);
+        log.info("leaveGame: game={}, user={}, remainingPlayers={}, readyPlayers={}, status={}",
+                gameCode, username, game.getPlayers().size(), game.getReadyPlayers().size(), game.getStatus());
 
-        // Last player: delete the game regardless of status
-        if (game.getPlayers().size() <= 1) {
+        // No players left: delete the game entity.
+        if (game.getPlayers().isEmpty()) {
+            log.info("leaveGame: deleting empty game {} after user {} left", gameCode, username);
             gameRepository.delete(game);
             gameRepository.flush();
             return;
+        }
+
+        // One player left: end the game cleanly instead of keeping a broken lobby alive.
+        if (game.getPlayers().size() == 1) {
+            log.info("leaveGame: finishing game {} because only one player remains after {} left", gameCode, username);
+            finishGame(gameCode, "You were the only player left. The game has ended.");
+            return;
+        }
+
+        // If a player leaves during the result phase and the remaining players are already ready,
+        // continue immediately instead of leaving everyone on the waiting screen.
+        if (game.getStatus() == GameStatus.ROUND_RESULT) {
+            if (game.getReadyPlayers().size() >= game.getPlayers().size()) {
+                if (game.getCurrentRound() >= game.getMaxRounds()) {
+                    finishGame(gameCode, "The game has ended.");
+                    return;
+                }
+
+                int nextRound = game.getCurrentRound() + 1;
+                game.setCurrentRound(nextRound);
+                game.setStatus(GameStatus.ANSWERING);
+                game.setStageDeadline(LocalDateTime.now().plusSeconds(30));
+                game.getReadyPlayers().clear();
+
+                Round newRound = new Round();
+                newRound.setGameId(game.getId());
+                newRound.setRoundNumber(nextRound);
+                assignQuestionToRound(game, newRound);
+                roundRepository.save(newRound);
+                roundRepository.flush();
+
+                game = gameRepository.save(game);
+                gameRepository.flush();
+                sendGameUpdate(game);
+                return;
+            }
         }
 
         // Host leaving: promote another player before removal
@@ -452,8 +495,6 @@ public class GameFlowService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No other player to promote to host"));
             game.setHostname(newHost);
         }
-
-        game.removePlayer(username);
         game = gameRepository.save(game);
         gameRepository.flush();
 
@@ -530,8 +571,13 @@ public class GameFlowService {
 
     // Converts Game to GameStateGetDTO and populates question, answers, and user-specific flags.
     private GameStateGetDTO buildGameState(Game game, User user) {
+        return buildGameState(game, user, null);
+    }
+
+    private GameStateGetDTO buildGameState(Game game, User user, String endMessage) {
         GameStateGetDTO state = DTOMapper.INSTANCE.convertEntityToGameStateGetDTO(game);
         state.setReadyCount(game.getReadyPlayers().size());
+        state.setEndMessage(endMessage);
 
         if (game.getCurrentRound() != null && game.getCurrentRound() > 0) {
             Optional<Round> roundOpt = roundRepository.findByGameIdAndRoundNumber(game.getId(), game.getCurrentRound());
@@ -601,7 +647,11 @@ public class GameFlowService {
 
     // Sends enriched game state to all players via WebSocket.
     private void sendGameUpdate(Game game) {
-        messagingTemplate.convertAndSend("/topic/game/" + game.getCode(), buildGameState(game, null));
+        sendGameUpdate(game, null);
+    }
+
+    private void sendGameUpdate(Game game, String endMessage) {
+        messagingTemplate.convertAndSend("/topic/game/" + game.getCode(), buildGameState(game, null, endMessage));
     }
 
     // Adds the correct answer as a voting option (userId=null marks it as the real answer)
