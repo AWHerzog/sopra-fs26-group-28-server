@@ -116,6 +116,9 @@ public class GameService {
 	public Game startGame(String code, int maxRounds) {
 		Game game = gameRepository.findByCode(code);
 		if (game == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+		if (game.getPlayers().size() < 2) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Game needs at least 2 players to start");
+		}
 		game.setStatus(GameStatus.ANSWERING);
 		game.setMaxRounds(maxRounds);
 		game.setCurrentRound(1);

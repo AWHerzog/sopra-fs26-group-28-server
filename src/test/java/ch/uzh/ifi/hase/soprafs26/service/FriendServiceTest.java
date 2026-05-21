@@ -14,10 +14,12 @@ import ch.uzh.ifi.hase.soprafs26.constant.InviteStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Friend;
 import ch.uzh.ifi.hase.soprafs26.entity.FriendRequest;
+import ch.uzh.ifi.hase.soprafs26.entity.Game;
 import ch.uzh.ifi.hase.soprafs26.entity.Invite;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.FriendRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.FriendRequestRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.InviteRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.FriendsDataGetDTO;
@@ -42,6 +44,9 @@ public class FriendServiceTest {
  
     @Mock
     private InviteRepository inviteRepository;
+
+    @Mock
+    private GameRepository gameRepository;
  
     @InjectMocks
     private FriendService friendService;
@@ -62,6 +67,8 @@ public class FriendServiceTest {
         receiver.setId(2L);
         receiver.setUsername("receiver");
         receiver.setStatus(UserStatus.OFFLINE);
+
+        when(gameRepository.findAll()).thenReturn(List.of());
     }
  
  
@@ -236,7 +243,7 @@ public class FriendServiceTest {
     @Test
     public void inviteFriend_validInvite_success() {
         when(userRepository.findByUsername("receiver")).thenReturn(receiver);
-        when(inviteRepository.findBySenderUsernameAndReceiverUsername("sender", "receiver")).thenReturn(null);
+        when(inviteRepository.findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus("sender", "receiver", "GAME123", InviteStatus.PENDING)).thenReturn(null);
  
         friendService.inviteFriend(sender, "receiver", "GAME123");
  
@@ -247,12 +254,37 @@ public class FriendServiceTest {
     public void inviteFriend_duplicateInvite_throwsConflict() {
         Invite existing = new Invite();
         when(userRepository.findByUsername("receiver")).thenReturn(receiver);
-        when(inviteRepository.findBySenderUsernameAndReceiverUsername("sender", "receiver")).thenReturn(existing);
+        when(inviteRepository.findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus("sender", "receiver", "GAME123", InviteStatus.PENDING)).thenReturn(existing);
  
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> friendService.inviteFriend(sender, "receiver", "GAME123"));
  
         assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+    }
+
+    @Test
+    public void inviteFriend_receiverAlreadyInGame_throwsConflict() {
+        when(userRepository.findByUsername("receiver")).thenReturn(receiver);
+
+        Game runningGame = new Game();
+        runningGame.addPlayer("receiver", 0);
+        when(gameRepository.findAll()).thenReturn(List.of(runningGame));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> friendService.inviteFriend(sender, "receiver", "GAME123"));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
+        verify(inviteRepository, never()).save(Mockito.any());
+    }
+
+    @Test
+    public void inviteFriend_newLobbyAfterOldInvite_allowsInvite() {
+        when(userRepository.findByUsername("receiver")).thenReturn(receiver);
+        when(inviteRepository.findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus("sender", "receiver", "NEWGAME", InviteStatus.PENDING)).thenReturn(null);
+
+        friendService.inviteFriend(sender, "receiver", "NEWGAME");
+
+        verify(inviteRepository, times(1)).save(Mockito.any(Invite.class));
     }
  
  

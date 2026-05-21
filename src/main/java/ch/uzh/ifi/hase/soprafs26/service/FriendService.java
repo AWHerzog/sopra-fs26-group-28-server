@@ -14,10 +14,12 @@ import ch.uzh.ifi.hase.soprafs26.constant.FriendRequestStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.InviteStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Friend;
 import ch.uzh.ifi.hase.soprafs26.entity.FriendRequest;
+import ch.uzh.ifi.hase.soprafs26.entity.Game;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.entity.Invite;
 import ch.uzh.ifi.hase.soprafs26.repository.FriendRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.FriendRequestRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.GameRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.InviteRepository;
 
@@ -39,11 +41,14 @@ public class FriendService {
 
 	private final InviteRepository inviteRepository;
 
-	public FriendService(@Qualifier("inviteRepository") InviteRepository inviteRepository, @Qualifier("friendRepository") FriendRepository friendRepository, @Qualifier("friendRequestRepository") FriendRequestRepository friendRequestRepository, @Qualifier("userRepository") UserRepository userRepository) {
+	private final GameRepository gameRepository;
+
+	public FriendService(@Qualifier("inviteRepository") InviteRepository inviteRepository, @Qualifier("friendRepository") FriendRepository friendRepository, @Qualifier("friendRequestRepository") FriendRequestRepository friendRequestRepository, @Qualifier("userRepository") UserRepository userRepository, @Qualifier("gameRepository") GameRepository gameRepository) {
 		this.friendRepository = friendRepository;
 		this.friendRequestRepository = friendRequestRepository;
 		this.userRepository = userRepository;
 		this.inviteRepository = inviteRepository;
+		this.gameRepository = gameRepository;
 		}
 
 	public FriendsDataGetDTO getFriendsData(User user){
@@ -131,12 +136,20 @@ public class FriendService {
 
 	public void inviteFriend(User sender, String receiverUsername, String gameCode){
 		User receiver = userRepository.findByUsername(receiverUsername);
+		if (receiver == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Receiver not found");
+		}
 
 		if (sender == receiver){
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot invite yourself");
 		}
 
-		if (inviteRepository.findBySenderUsernameAndReceiverUsername(sender.getUsername(), receiver.getUsername()) != null){
+		if (isUserInAnyGame(receiver.getUsername())) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Receiver is already in a game");
+		}
+
+		if (inviteRepository.findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus(
+				sender.getUsername(), receiver.getUsername(), gameCode, InviteStatus.PENDING) != null){
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already sent a request to this user");
 		}
 
@@ -146,6 +159,11 @@ public class FriendService {
 		invite.setStatus(InviteStatus.PENDING); 
 		invite.setGameCode(gameCode);
 		inviteRepository.save(invite);
+	}
+
+	private boolean isUserInAnyGame(String username) {
+		return gameRepository.findAll().stream()
+			.anyMatch(game -> game.getPlayers() != null && game.getPlayers().containsKey(username));
 	}
 
 	public String acceptInvite(Long id){

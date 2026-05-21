@@ -153,6 +153,14 @@ public class GameFlowServiceTest {
                 () -> gameFlowService.startGame("abc123", hostUser, new GameStartPostDTO()));
     }
 
+    @Test
+    public void startGame_onlyHostPresent_throwsConflict() {
+        testGame.getPlayers().remove("player2");
+
+        assertThrows(ResponseStatusException.class,
+                () -> gameFlowService.startGame("abc123", hostUser, new GameStartPostDTO()));
+    }
+
     // --- submitAnswer ---
 
     @Test

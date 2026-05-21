@@ -1,36 +1,74 @@
-# SoPra RESTful Service Template FS26
+# SoPra FS26 Group 28 – Server
 
-## Getting started with Spring Boot
--   Documentation: https://docs.spring.io/spring-boot/docs/current/reference/html/index.html
--   Guides: http://spring.io/guides
-    -   Building a RESTful Web Service: http://spring.io/guides/gs/rest-service/
-    -   Building REST services with Spring: https://spring.io/guides/tutorials/rest/
+## Introduction and Motivation
 
-## Setup this Template with your IDE of choice
-Download your IDE of choice (e.g., [IntelliJ](https://www.jetbrains.com/idea/download/), [Visual Studio Code](https://code.visualstudio.com/), or [Eclipse](http://www.eclipse.org/downloads/)). Make sure Java 17 is installed on your system (for Windows, please make sure your `JAVA_HOME` environment variable is set to the correct version of Java).
+Drigleit is a social bluffing game: players invent believable answers to obscure trivia questions, then vote on which answer they think is the correct one. You earn a point for picking the right answer and an extra point for every player you successfully fooled into choosing yours.
 
-### IntelliJ
-If you consider to use IntelliJ as your IDE of choice, you can make use of your free educational license [here](https://www.jetbrains.com/community/education/#students).
-1. File -> Open... -> SoPra server template
-2. Accept to import the project as a `gradle project`
-3. To build right click the `build.gradle` file and choose `Run Build`
+We built this backend to make Drigleit accessible without friction. The original game is fun but cumbersome to set up in person, so our goal was to remove every barrier to entry:
 
-### VS Codes
-The following extensions can help you get started more easily:
--   `vmware.vscode-spring-boot`
--   `vscjava.vscode-spring-initializr`
--   `vscjava.vscode-spring-boot-dashboard`
--   `vscjava.vscode-java-pack`
+- **Server-authoritative game flow** — rules and scoring are enforced on the server for fairness.
+- **No personal data required** — players need only a username to join, no email or phone number.
+- **Live translation** — questions are translated on the fly via DeepL so players can enjoy the game in their preferred language.
 
-**Note:** You'll need to build the project first with Gradle, just click on the `build` command in the _Gradle Tasks_ extension. Then check the _Spring Boot Dashboard_ extension if it already shows `soprafs26` and hit the play button to start the server. If it doesn't show up, restart VS Code and check again.
+## Technologies Used
 
-## Building with Gradle
-You can use the local Gradle Wrapper to build the application.
--   macOS: `./gradlew`
--   Linux: `./gradlew`
--   Windows: `./gradlew.bat`
+- Java 17
+- Spring Boot 3 (Web, WebSocket, JPA)
+- Gradle 8 (wrapper)
+- H2 in-memory database (default local profile)
+- MapStruct (DTO mapping)
+- JaCoCo + SonarCloud (quality pipeline)
+- Google App Engine (deployment)
 
-More Information about [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html) and [Gradle](https://gradle.org/docs/).
+## High-Level Components
+
+1. **Application Bootstrap and Global Config**
+   - *Role:* Starts the application, enables scheduled tasks, and configures CORS for cross-origin requests.
+   - *Main files:* [Application.java](src/main/java/ch/uzh/ifi/hase/soprafs26/Application.java), [WebSocketConfig.java](src/main/java/ch/uzh/ifi/hase/soprafs26/config/WebSocketConfig.java)
+
+2. **REST and WebSocket Controllers**
+   - *Role:* Expose HTTP endpoints and WebSocket entry points for all game and user actions.
+   - *Main files:* [GameController.java](src/main/java/ch/uzh/ifi/hase/soprafs26/controller/GameController.java), [UserController.java](src/main/java/ch/uzh/ifi/hase/soprafs26/controller/UserController.java), [GameSocketController.java](src/main/java/ch/uzh/ifi/hase/soprafs26/controller/GameSocketController.java)
+
+3. **Domain Services (Business Logic)**
+   - *Role:* Implement game phase transitions, countdown timers, authentication, translation, and social interactions (friends/invites).
+   - *Main files:* [GameFlowService.java](src/main/java/ch/uzh/ifi/hase/soprafs26/service/GameFlowService.java), [GameService.java](src/main/java/ch/uzh/ifi/hase/soprafs26/service/GameService.java), [GameTimerService.java](src/main/java/ch/uzh/ifi/hase/soprafs26/service/GameTimerService.java), [UserService.java](src/main/java/ch/uzh/ifi/hase/soprafs26/service/UserService.java)
+
+4. **Persistence Layer**
+   - *Role:* Models and stores games, rounds, answers, votes, users, invites, and friendships via JPA repositories.
+   - *Main files:* [Game.java](src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Game.java), [Round.java](src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Round.java), [Answer.java](src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Answer.java), [Vote.java](src/main/java/ch/uzh/ifi/hase/soprafs26/entity/Vote.java), [GameRepository.java](src/main/java/ch/uzh/ifi/hase/soprafs26/repository/GameRepository.java)
+
+5. **API Contract Mapping**
+   - *Role:* Decouples internal domain entities from public API payloads using MapStruct mappers.
+   - *Main files:* [GameStateGetDTO.java](src/main/java/ch/uzh/ifi/hase/soprafs26/rest/dto/GameStateGetDTO.java), [DTOMapper.java](src/main/java/ch/uzh/ifi/hase/soprafs26/rest/mapper/DTOMapper.java)
+
+**Correlation summary:** Controllers receive requests and delegate to services. Services enforce business rules and mutate domain state. Entities are persisted via repositories. Updated state is returned to REST clients as DTOs and broadcast to WebSocket subscribers on the relevant game topics.
+
+Architecture diagram: [diagrams/01_ARCHITECTURE_OVERVIEW.md](diagrams/01_ARCHITECTURE_OVERVIEW.md)
+
+## Launch and Deployment
+
+### Prerequisites
+
+- Java 17
+- No external database required for local development — H2 runs in memory by default.
+
+### Local Setup
+
+1. Clone and enter this repository.
+2. Make the Gradle wrapper executable (Linux/macOS):
+
+```bash
+chmod +x gradlew
+```
+
+3. Start the server:
+
+```bash
+./gradlew bootRun
+```
+
+4. Verify at [http://localhost:8080](http://localhost:8080) — the root endpoint should return `"The application is running."`.
 
 ### Build
 
@@ -38,81 +76,79 @@ More Information about [Gradle Wrapper](https://docs.gradle.org/current/userguid
 ./gradlew build
 ```
 
-### Run
-
-```bash
-./gradlew bootRun
-```
-
-You can verify that the server is running by visiting `localhost:8080` in your browser.
-
 ### Test
 
 ```bash
 ./gradlew test
 ```
 
-### Development Mode
-You can start the backend in development mode, this will automatically trigger a new build and reload the application
-once the content of a file has been changed.
+Test coverage is tracked via JaCoCo and reported to SonarCloud. The project targets ≥ 75% coverage.
 
-Start two terminal windows and run:
+### Continuous Development Mode (Optional)
 
-`./gradlew build --continuous`
+Run the build in watch mode in one terminal and the server in another:
 
-and in the other one:
+```bash
+# Terminal 1
+./gradlew build --continuous -xtest
 
-`./gradlew bootRun`
+# Terminal 2
+./gradlew bootRun
+```
 
-If you want to avoid running all tests with every change, use the following command instead:
+### External Dependencies
 
-`./gradlew build --continuous -xtest`
+- **DeepL translation:** set the `DEEPL_API_KEY` environment variable to enable live question translation. The server starts without it, but translation endpoints will not function.
+- **Database:** local development uses the embedded H2 database configured in [src/main/resources/application.properties](src/main/resources/application.properties). No setup required.
 
-## API Endpoint Testing with Postman
-We recommend using [Postman](https://www.getpostman.com) to test your API Endpoints.
+### Release / Deployment
 
-## Debugging
-If something is not working and/or you don't know what is going on. We recommend using a debugger and step-through the process step-by-step.
+Deployment is automated via GitHub Actions on every push to `main`:
 
-To configure a debugger for SpringBoot's Tomcat servlet (i.e. the process you start with `./gradlew bootRun` command), do the following:
+- Workflow: [.github/workflows/main.yml](.github/workflows/main.yml)
+- Pipeline stages: unit tests → JaCoCo coverage → SonarCloud analysis → Google App Engine deploy
+- **Live application:** [https://sopra-fs26-group-28-server.oa.r.appspot.com](https://sopra-fs26-group-28-server.oa.r.appspot.com)
 
-1. Open Tab: **Run**/Edit Configurations
-2. Add a new Remote Configuration and name it properly
-3. Start the Server in Debug mode: `./gradlew bootRun --debug-jvm`
-4. Press `Shift + F9` or the use **Run**/Debug "Name of your task"
-5. Set breakpoints in the application where you need it
-6. Step through the process one step at a time
+Required repository secrets:
 
-## Testing
-Have a look here: https://www.baeldung.com/spring-boot-testing
+| Secret | Purpose |
+|---|---|
+| `SONAR_TOKEN` | SonarCloud analysis |
+| `GCP_SERVICE_CREDENTIALS` | Google App Engine deployment |
+| `DEEPL_API_KEY` | Injected into `app.yaml` at deploy time |
 
-<br>
-<br>
-<br>
+Manual deploy (if needed):
 
-## Docker
+```bash
+./gradlew clean build
+# then deploy using app.yaml configuration
+```
 
-### Introduction
-This year Docker will be used to ease the process of deployment.\
-Docker is a tool that uses containers as isolated environments, ensuring that the application runs consistently and uniformly across different devices.\
-Everything in this repository is already set up to minimize your effort for deployment.\
-All changes to the main branch will automatically be pushed to dockerhub and optimized for production.
+See [app.yaml](app.yaml) for App Engine runtime settings.
 
-### Setup
-1. **One** member of the team should create an account on [dockerhub](https://hub.docker.com/), _incorporating the group number into the account name_, for example, `SoPra_group_XX`.\
-2. This account then creates a repository on dockerhub with the _same name as the group's Github repository name_.\
-3. Finally, the person's account details need to be added as [secrets](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository) to the group's repository:
-    - dockerhub_username (the username of the dockerhub account from step 1, for example, `SoPra_group_XX`)
-    - dockerhub_password (a generated PAT([personal access token](https://docs.docker.com/docker-hub/access-tokens/)) of the account with read and write access)
-    - dockerhub_repo_name (the name of the dockerhub repository from step 2)
+## Roadmap
 
-### Pull and run
-Once the image is created and has been successfully pushed to dockerhub, the image can be run on any machine.\
-Ensure that [Docker](https://www.docker.com/) is installed on the machine you wish to run the container.\
-First, pull (download) the image with the following command, replacing your username and repository name accordingly.
+1. **WebSocket test coverage** — Add controller-level integration tests for WebSocket flows and end-to-end multiplayer scenarios to bring socket-driven game logic under automated coverage.
+2. **Reconnect and host-migration resilience** — Handle mid-game disconnects gracefully: persist reconnect state, allow a new player to take over as host, and resume the round without data loss.
+3. **Production database profile** — Replace the H2 in-memory store with a persistent, production-grade relational database (e.g., PostgreSQL on Cloud SQL) to support long-term statistics and session continuity.
 
-```docker pull <dockerhub_username>/<dockerhub_repo_name>```
+## Authors and Acknowledgment
 
-Then, run the image in a container with the following command, again replacing _<dockerhub_username>_ and _<dockerhub_repo_name>_ accordingly.
+Core team – Group 28:
 
-```docker run -p 3000:3000 <dockerhub_username>/<dockerhub_repo_name>```
+| Name | UZH Email | Matriculation Number | GitHub Username |
+|---|---|---|---|
+| Eneas Keller | eneasgennaro.keller@uzh.ch | 24-736-407 | EneasKe |
+| Ruven Peterhans | ruvenelias.peterhans@uzh.ch | 23-728-678 | Ruven3344 |
+| Luiz Hablützel | luizmartin.habluetzel@uzh.ch | 23-708-183 | luizcodes02 |
+| Abraham Herzog | abrahamwalter.herzog@uzh.ch | 22-617-757 | AWHerzog |
+
+Contribution history and weekly logs: [../sopra-fs26-group-28-client/newContributions.md](../sopra-fs26-group-28-client/newContributions.md)
+
+**Acknowledgment:** University of Zurich SoPra FS26 course staff and the provided project starter template.
+
+## License
+
+This project is licensed under the **Apache License 2.0**.
+
+See [LICENSE](LICENSE) for the full text, or visit [https://www.apache.org/licenses/LICENSE-2.0](https://www.apache.org/licenses/LICENSE-2.0).

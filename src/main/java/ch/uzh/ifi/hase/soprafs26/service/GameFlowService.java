@@ -80,6 +80,10 @@ public class GameFlowService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not in WAITING state");
         }
 
+        if (game.getPlayers().size() < 2) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game needs at least 2 players to start");
+        }
+
         // Default max Rounds can be set by host
         if (payload.getMaxRounds() != null) {
             game.setMaxRounds(payload.getMaxRounds());

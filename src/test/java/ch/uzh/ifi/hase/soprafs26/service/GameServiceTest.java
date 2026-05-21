@@ -71,4 +71,12 @@ public class GameServiceTest {
         // then
         assertThrows(ResponseStatusException.class, () -> gameService.joinGame("abc123", "newPlayer"));
     }
+
+    @Test
+    public void startGame_onlyOnePlayer_throwsException() {
+        testGame.addPlayer("hostUser", 0);
+        Mockito.when(gameRepository.findByCode("abc123")).thenReturn(testGame);
+
+        assertThrows(ResponseStatusException.class, () -> gameService.startGame("abc123", 3));
+    }
 }
