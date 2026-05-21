@@ -221,6 +221,7 @@ public class UserController {
 	public Map<String, String> inviteAccept(@RequestBody Map<String, Long> body, @RequestHeader("Authorization") String token){
 		userService.checkTokenAuthenticity(token);
 		Long id = body.get("inviteId");
+		if (id == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing inviteId");
 		String gameCode = friendService.acceptInvite(id);
 		return Map.of("gameCode", gameCode);
 	}
@@ -231,6 +232,7 @@ public class UserController {
 	public void inviteDecline(@RequestBody Map<String, Long> body, @RequestHeader("Authorization") String token){
 		userService.checkTokenAuthenticity(token);
 		Long id = body.get("inviteId");
+		if (id == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing inviteId");
 		friendService.declineInvite(id);
 	}
 }
