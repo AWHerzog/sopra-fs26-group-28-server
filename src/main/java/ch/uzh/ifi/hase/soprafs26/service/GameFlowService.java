@@ -408,6 +408,10 @@ public class GameFlowService {
         Game game = getGameByCodeForUpdate(gameCode);
         User leavingUser = userRepository.findByUsername(username);
 
+        if (game == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found");
+        }
+
         if (leavingUser != null) {
             leavingUser.setStatus(UserStatus.ONLINE);
             userRepository.save(leavingUser);
@@ -438,6 +442,18 @@ public class GameFlowService {
         }
         inviteRepository.flush();
 
+        //reassign host 
+        if (game.getHostname().equals(username)){
+			if (game.getPlayers().size() > 1){
+                //set other player host
+			String newHost = game.getPlayers().keySet().stream()
+				.filter(name -> !name.equals(username))
+				.findFirst()
+				.orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No other player to promote to host"));
+			game.setHostname(newHost);
+			}
+        }
+
         game.getReadyPlayers().remove(username);
         game.removePlayer(username);
         log.info("leaveGame: game={}, user={}, remainingPlayers={}, readyPlayers={}, status={}",
@@ -452,7 +468,7 @@ public class GameFlowService {
         }
 
         // One player left: end the game cleanly instead of keeping a broken lobby alive.
-        if (game.getPlayers().size() == 1) {
+        if (game.getPlayers().size() == 1) { //here issue, in lobby it should not 
             log.info("leaveGame: finishing game {} because only one player remains after {} left", gameCode, username);
             finishGame(gameCode, "You were the only player left. The game has ended.");
             return;
@@ -679,3 +695,4 @@ public class GameFlowService {
     }
 
 }
+

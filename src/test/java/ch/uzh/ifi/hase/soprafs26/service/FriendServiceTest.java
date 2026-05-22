@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
  
 import ch.uzh.ifi.hase.soprafs26.constant.FriendRequestStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.InviteStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Friend;
@@ -267,6 +268,7 @@ public class FriendServiceTest {
         when(userRepository.findByUsername("receiver")).thenReturn(receiver);
 
         Game runningGame = new Game();
+        runningGame.setStatus(GameStatus.ANSWERING);
         runningGame.addPlayer("receiver", 0);
         when(gameRepository.findAll()).thenReturn(List.of(runningGame));
 

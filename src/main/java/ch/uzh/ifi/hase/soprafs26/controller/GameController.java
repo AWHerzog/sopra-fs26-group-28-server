@@ -60,11 +60,25 @@ public class GameController {
 		gameFlowService.leaveGame(code, username);
     }
 
+	@PostMapping("/games/{code}/lobby/leave")
+	@ResponseStatus(HttpStatus.OK)
+    public void leaveLobby(@PathVariable String code, @RequestHeader("Authorization") String token) {
+		String username = userService.checkTokenAuthenticity(token).getUsername();
+		gameService.leaveGame(code, username);
+    }
+
 	@PostMapping(value = "/games/{code}/leave/dirty", consumes = {"text/plain", "application/json", "*/*"})
 	@ResponseStatus(HttpStatus.OK)
 	public void dirty_leave(@PathVariable String code, @RequestParam String token){
 		String username = userService.checkTokenAuthenticity(token).getUsername();
 		gameFlowService.leaveGame(code, username);
+	}
+
+	@PostMapping(value = "/games/{code}/lobby/leave/dirty", consumes = {"text/plain", "application/json", "*/*"})
+	@ResponseStatus(HttpStatus.OK)
+	public void dirty_leave_lobby(@PathVariable String code, @RequestParam String token){
+		String username = userService.checkTokenAuthenticity(token).getUsername();
+		gameService.leaveGame(code, username);
 	}
 
 
