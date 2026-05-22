@@ -154,6 +154,10 @@ public class FriendService {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already sent a request to this user");
 		}
 
+		if (friendRepository.findBySenderUsernameOrReceiverUsername(sender.getUsername(), receiver.getUsername()) != null){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already friends with this user");
+		}
+
 		Invite invite = new Invite();
 		invite.setSenderUsername(sender.getUsername());
 		invite.setReceiverUsername(receiver.getUsername());
