@@ -115,8 +115,12 @@ public class FriendService {
 		}
 
 		//check if a request was already sent 
-		if (friendRequestRepository.findBySenderIdAndReceiverId(sender.getId(), receiver.getId()) != null){
+		if (friendRequestRepository.findBySenderIdAndReceiverId(sender.getId(), receiver.getId()) != null ){
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already sent a request to this user");
+		}
+
+		if (friendRequestRepository.findBySenderIdAndReceiverId(receiver.getId(), sender.getId()) != null ){
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already have a request from this user");
 		}
 
 		//check if users are already friends (both directions)
@@ -152,10 +156,6 @@ public class FriendService {
 		if (inviteRepository.findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus(sender.getUsername(), receiver.getUsername(), gameCode, InviteStatus.PENDING) != null || 
 		inviteRepository.findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus(receiver.getUsername(), sender.getUsername(), gameCode, InviteStatus.PENDING) != null){
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already sent a request to this user");
-		}
-
-		if (friendRepository.findBySenderUsernameOrReceiverUsername(sender.getUsername(), receiver.getUsername()) != null){
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already friends with this user");
 		}
 
 		Invite invite = new Invite();
