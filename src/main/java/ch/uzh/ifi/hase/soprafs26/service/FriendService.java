@@ -173,7 +173,10 @@ public class FriendService {
 
 	public String acceptInvite(Long id){
 		Invite invite = inviteRepository.findInviteById(id);
-		
+		if (invite == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found");
+		}
+
 		if (invite.getStatus() != InviteStatus.PENDING){
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "You already accepted this invite");
 		}
@@ -184,7 +187,10 @@ public class FriendService {
 
 	public void declineInvite(Long id){
 		Invite invite = inviteRepository.findInviteById(id);
-		
+		if (invite == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found");
+		}
+
 		if (invite.getStatus() != InviteStatus.PENDING){
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "You already declined this invite");
 		}
