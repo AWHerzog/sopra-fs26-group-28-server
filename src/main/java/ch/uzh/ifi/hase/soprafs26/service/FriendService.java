@@ -149,8 +149,8 @@ public class FriendService {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Receiver is already in a game");
 		}
 
-		if (inviteRepository.findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus(
-				sender.getUsername(), receiver.getUsername(), gameCode, InviteStatus.PENDING) != null){
+		if (inviteRepository.findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus(sender.getUsername(), receiver.getUsername(), gameCode, InviteStatus.PENDING) != null || 
+		inviteRepository.findBySenderUsernameAndReceiverUsernameAndGameCodeAndStatus(receiver.getUsername(), sender.getUsername(), gameCode, InviteStatus.PENDING) != null){
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Already sent a request to this user");
 		}
 
