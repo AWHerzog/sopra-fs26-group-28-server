@@ -23,4 +23,7 @@ public interface GameRepository extends JpaRepository<Game, Long> {
 
 	@Query("SELECT g FROM Game g WHERE g.stageDeadline IS NOT NULL AND g.stageDeadline < :now AND g.status IN :statuses")
 	List<Game> findExpiredGames(@Param("now") LocalDateTime now, @Param("statuses") List<GameStatus> statuses);
+
+	@Query("SELECT g FROM Game g JOIN g.players p WHERE KEY(p) = :username AND g.status = :status")
+	Game findGameByPlayerUsernameAndStatus(@Param("username") String username, @Param("status") GameStatus status);
 }
