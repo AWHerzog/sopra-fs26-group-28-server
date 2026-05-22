@@ -10,7 +10,6 @@ We built this backend to make Drigleit accessible without friction. The original
 - **No personal data required** — players need only a username to join, no email or phone number.
 - **Live translation** — questions are translated on the fly via DeepL so players can enjoy the game in their preferred language.
 
-
 ## Technologies Used
 
 - Java 17
